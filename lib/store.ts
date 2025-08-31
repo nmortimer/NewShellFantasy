@@ -13,6 +13,7 @@ export type Team = {
   mascot?: string;
   stylePack?: "modern" | "retro" | "futuristic" | "simple";
   finalized?: boolean;
+  lastGeneratedAt?: number;
 };
 
 type State = {
@@ -25,6 +26,7 @@ type State = {
   updateTeam: (id: string, patch: Partial<Team>) => void;
   randomizeTeamStyle: (id: string) => void;
   finalizeTeam: (id: string) => void;
+  generateTeam: (id: string) => void; // NEW: hook for future AI
 };
 
 const STYLES: Array<Team["stylePack"]> = ["modern", "retro", "futuristic", "simple"];
@@ -42,7 +44,8 @@ export const useLeagueStore = create<State>((set, get) => ({
       ...t,
       mascot: t.name,
       stylePack: STYLES[idx % STYLES.length],
-      finalized: false
+      finalized: false,
+      lastGeneratedAt: Date.now()
     }));
     set({
       teams: seeded,
@@ -75,5 +78,15 @@ export const useLeagueStore = create<State>((set, get) => ({
       const teams = s.teams.map((t) => (t.id === id ? { ...t, finalized: true } : t));
       const finalizedCount = teams.filter((t) => t.finalized).length;
       return { teams, finalizedCount };
+    }),
+
+  // Placeholder for future AI generation – for now this simply stamps a timestamp.
+  // You can later replace this with a call that regenerates logos/posters.
+  generateTeam: (id) =>
+    set((s) => {
+      const teams = s.teams.map((t) =>
+        t.id === id ? { ...t, lastGeneratedAt: Date.now(), finalized: false } : t
+      );
+      return { teams };
     })
 }));
