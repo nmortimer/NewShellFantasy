@@ -1,10 +1,10 @@
-
 "use client";
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Pen, RefreshCcw, CheckCircle2 } from "lucide-react";
-import { Team, useLeagueStore } from "@/lib/store";
+import type { Team } from "@/lib/store"; // ✅ type-only import
+import { useLeagueStore } from "@/lib/store";
 
 export default function TeamCard({ team }: { team: Team }) {
   const router = useRouter();
@@ -19,9 +19,15 @@ export default function TeamCard({ team }: { team: Team }) {
     >
       <div className="card-foil-inner p-4 relative">
         {team.finalized && <div className="psa-badge">FINALIZED</div>}
-        <div className="rounded-xl p-4 flex items-center justify-center"
-          style={{ background: team.primary, border: "1px solid rgba(255,255,255,0.08)" }}>
-          <img src={team.logo} alt={team.name} className="w-28 h-28 object-contain drop-shadow-[0_0_25px_rgba(0,224,255,0.35)]" />
+        <div
+          className="rounded-xl p-4 flex items-center justify-center"
+          style={{ background: team.primary, border: "1px solid rgba(255,255,255,0.08)" }}
+        >
+          <img
+            src={team.logo}
+            alt={team.name}
+            className="w-28 h-28 object-contain drop-shadow-[0_0_25px_rgba(0,224,255,0.35)]"
+          />
         </div>
         <div className="mt-4">
           <div className="text-lg font-semibold">{team.name}</div>
