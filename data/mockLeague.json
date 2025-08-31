@@ -1,0 +1,102 @@
+{
+  "leagueId": "MOCK",
+  "leagueName": "FTFL Premium Mock",
+  "teams": [
+    {
+      "id": "t1",
+      "name": "Boulder Bandits",
+      "manager": "Maddox",
+      "primary": "#00B2CA",
+      "secondary": "#C8102E",
+      "logo": "/placeholders/logos/team-01.svg"
+    },
+    {
+      "id": "t2",
+      "name": "Silverhawks",
+      "manager": "Riley",
+      "primary": "#7C83FD",
+      "secondary": "#00E0FF",
+      "logo": "/placeholders/logos/team-02.svg"
+    },
+    {
+      "id": "t3",
+      "name": "Ski Bums",
+      "manager": "Kai",
+      "primary": "#2DD4BF",
+      "secondary": "#3B82F6",
+      "logo": "/placeholders/logos/team-03.svg"
+    },
+    {
+      "id": "t4",
+      "name": "Wakarusa Wizards",
+      "manager": "Zoe",
+      "primary": "#9B30FF",
+      "secondary": "#00E0FF",
+      "logo": "/placeholders/logos/team-04.svg"
+    },
+    {
+      "id": "t5",
+      "name": "Yeti United",
+      "manager": "Sam",
+      "primary": "#14B8A6",
+      "secondary": "#A3E635",
+      "logo": "/placeholders/logos/team-05.svg"
+    },
+    {
+      "id": "t6",
+      "name": "Patriot Pride",
+      "manager": "Drew",
+      "primary": "#3B82F6",
+      "secondary": "#FF3B3B",
+      "logo": "/placeholders/logos/team-06.svg"
+    },
+    {
+      "id": "t7",
+      "name": "Sombrero Skulls",
+      "manager": "Ace",
+      "primary": "#C8102E",
+      "secondary": "#00B2CA",
+      "logo": "/placeholders/logos/team-07.svg"
+    },
+    {
+      "id": "t8",
+      "name": "Flatiron Peaks",
+      "manager": "Jules",
+      "primary": "#6EE7B7",
+      "secondary": "#F59E0B",
+      "logo": "/placeholders/logos/team-08.svg"
+    },
+    {
+      "id": "t9",
+      "name": "Eagle Head",
+      "manager": "Chris",
+      "primary": "#EAB308",
+      "secondary": "#111827",
+      "logo": "/placeholders/logos/team-09.svg"
+    },
+    {
+      "id": "t10",
+      "name": "Train Engine",
+      "manager": "Max",
+      "primary": "#0EA5E9",
+      "secondary": "#10B981",
+      "logo": "/placeholders/logos/team-10.svg"
+    },
+    {
+      "id": "t11",
+      "name": "Mort Monsters",
+      "manager": "Nick",
+      "primary": "#A855F7",
+      "secondary": "#22D3EE",
+      "logo": "/placeholders/logos/team-11.svg"
+    },
+    {
+      "id": "t12",
+      "name": "Patriots Alt",
+      "manager": "Taylor",
+      "primary": "#1E293B",
+      "secondary": "#F97316",
+      "logo": "/placeholders/logos/team-12.svg"
+    }
+  ]
+}
