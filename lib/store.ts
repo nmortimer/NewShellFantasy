@@ -1,4 +1,3 @@
-
 "use client";
 
 import { create } from "zustand";
@@ -11,7 +10,8 @@ export type Team = {
   primary: string;
   secondary: string;
   logo: string;
-  stylePack?: "v1" | "v2" | "v3";
+  mascot?: string; // NEW: editable mascot text (defaults to name)
+  stylePack?: "modern" | "retro" | "futuristic" | "simple";
   finalized?: boolean;
 };
 
@@ -27,6 +27,8 @@ type State = {
   finalizeTeam: (id: string) => void;
 };
 
+const STYLES: Array<Team["stylePack"]> = ["modern", "retro", "futuristic", "simple"];
+
 export const useLeagueStore = create<State>((set, get) => ({
   leagueId: null,
   leagueName: "Your League",
@@ -38,7 +40,8 @@ export const useLeagueStore = create<State>((set, get) => ({
   loadMockLeague: async () => {
     const seeded = (mock.teams as Team[]).map((t, idx) => ({
       ...t,
-      stylePack: (["v1", "v2", "v3"] as const)[idx % 3],
+      mascot: t.name,
+      stylePack: STYLES[idx % STYLES.length],
       finalized: false
     }));
     set({
@@ -58,15 +61,12 @@ export const useLeagueStore = create<State>((set, get) => ({
 
   randomizeTeamStyle: (id) =>
     set((s) => {
-      const packs: Array<"v1" | "v2" | "v3"> = ["v1", "v2", "v3"];
-      const teams = s.teams.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              stylePack: packs[(packs.indexOf(t.stylePack || "v1") + 1) % packs.length]
-            }
-          : t
-      );
+      const teams = s.teams.map((t) => {
+        if (t.id !== id) return t;
+        const i = STYLES.indexOf(t.stylePack || "modern");
+        const next = STYLES[(i + 1) % STYLES.length];
+        return { ...t, stylePack: next };
+      });
       return { teams };
     }),
 
