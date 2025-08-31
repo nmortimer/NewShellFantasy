@@ -10,7 +10,7 @@ export type Team = {
   primary: string;
   secondary: string;
   logo: string;
-  mascot?: string; // NEW: editable mascot text (defaults to name)
+  mascot?: string;
   stylePack?: "modern" | "retro" | "futuristic" | "simple";
   finalized?: boolean;
 };
