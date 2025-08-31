@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -10,12 +9,7 @@ export default function Header() {
   const pathname = usePathname();
   const { leagueId } = useLeagueStore();
 
-  const nav = [
-    { href: "/", label: "Home" },
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/content", label: "Content" },
-    { href: `/gallery/${leagueId || "MOCK"}/week/1`, label: "Gallery" }
-  ];
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
     <header className="sticky top-0 z-40 bg-base-900/80 backdrop-blur border-b border-white/10">
@@ -24,22 +18,54 @@ export default function Header() {
           <Trophy className="text-foil-gold" />
           <span className="font-poster text-xl tracking-wide">League Studio</span>
         </Link>
+
         <nav className="flex items-center gap-2">
-          {nav.map((n) => (
-            <Link
-              key={n.href}
-              href={n.href}
-              className={`px-3 py-1.5 rounded-lg border transition ${pathname === n.href ? "border-foil-cyan/50 bg-foil-cyan/10" : "border-white/10 hover:bg-white/5"}`}
-            >
-              {n.label}
-            </Link>
-          ))}
-          <a
+          <Link
+            href="/"
+            className={`px-3 py-1.5 rounded-lg border transition ${
+              isActive("/") ? "border-foil-cyan/50 bg-foil-cyan/10" : "border-white/10 hover:bg-white/5"
+            }`}
+          >
+            Home
+          </Link>
+
+          <Link
+            href="/dashboard"
+            className={`px-3 py-1.5 rounded-lg border transition ${
+              isActive("/dashboard") ? "border-foil-cyan/50 bg-foil-cyan/10" : "border-white/10 hover:bg-white/5"
+            }`}
+          >
+            Dashboard
+          </Link>
+
+          <Link
+            href="/content"
+            className={`px-3 py-1.5 rounded-lg border transition ${
+              isActive("/content") ? "border-foil-cyan/50 bg-foil-cyan/10" : "border-white/10 hover:bg-white/5"
+            }`}
+          >
+            Content
+          </Link>
+
+          {/* Use object form for typed dynamic route */}
+          <Link
+            href={{
+              pathname: "/gallery/[leagueId]/week/[n]",
+              query: { leagueId: leagueId || "MOCK", n: "1" }
+            }}
+            className={`px-3 py-1.5 rounded-lg border transition ${
+              pathname.startsWith("/gallery") ? "border-foil-cyan/50 bg-foil-cyan/10" : "border-white/10 hover:bg-white/5"
+            }`}
+          >
+            Gallery
+          </Link>
+
+          <Link
             href="/complete"
             className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-foil-purple/50 bg-foil-purple/10 hover:shadow-neon-purple transition"
           >
             <GalleryVerticalEnd size={16} /> Finalize
-          </a>
+          </Link>
         </nav>
       </div>
     </header>
