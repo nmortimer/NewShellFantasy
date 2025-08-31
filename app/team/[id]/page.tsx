@@ -1,9 +1,8 @@
-
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
 import { useMemo } from "react";
-import { ColorWheel, CheckCircle2, Wand2 } from "lucide-react";
+import { Palette, CheckCircle2, Wand2 } from "lucide-react";
 import RotaryKnob from "@/components/RotaryKnob";
 import ColorPicker from "@/components/ColorPicker";
 import { useLeagueStore } from "@/lib/store";
@@ -78,7 +77,7 @@ export default function TeamEditor() {
             <div className="card-foil">
               <div className="card-foil-inner p-5">
                 <div className="flex items-center gap-2 text-white/80 mb-3">
-                  <ColorWheel size={16} /> Colors
+                  <Palette size={16} /> Colors
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <ColorPicker
