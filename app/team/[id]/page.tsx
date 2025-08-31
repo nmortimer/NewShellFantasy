@@ -25,10 +25,8 @@ export default function TeamEditor() {
     );
   }
 
-  const styleIndex = Math.max(
-    0,
-    STYLE_KEYS.indexOf(((team.stylePack as StyleKey) ?? "modern") as StyleKey)
-  );
+  const currentStyle = (team.stylePack as StyleKey) ?? "modern";
+  const styleIndex = Math.max(0, STYLE_KEYS.indexOf(currentStyle));
 
   return (
     <section className="px-6 py-8">
