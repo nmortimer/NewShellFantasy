@@ -9,6 +9,12 @@ import { useLeagueStore } from "@/lib/store";
 
 const STYLE_KEYS = ["modern", "retro", "futuristic", "simple"] as const;
 type StyleKey = typeof STYLE_KEYS[number];
+const STYLE_LABEL: Record<StyleKey, string> = {
+  modern: "Modern",
+  retro: "Retro",
+  futuristic: "Futuristic",
+  simple: "Simple"
+};
 
 export default function TeamEditor() {
   const router = useRouter();
@@ -27,6 +33,7 @@ export default function TeamEditor() {
 
   const currentStyle = (team.stylePack as StyleKey) ?? "modern";
   const styleIndex = Math.max(0, STYLE_KEYS.indexOf(currentStyle));
+  const styleLabel = STYLE_LABEL[currentStyle];
 
   return (
     <section className="px-6 py-8">
@@ -34,24 +41,25 @@ export default function TeamEditor() {
         <h1 className="font-poster text-4xl tracking-tight mb-4">{team.name} Editor</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Preview (uses space better; stacked details) */}
+          {/* Preview / Team Info (compact, no wasted space) */}
           <div className="lg:col-span-2 card-foil">
-            <div className="card-foil-inner p-6 min-h-[320px] relative">
+            <div className="card-foil-inner p-6 relative">
               {team.finalized && <div className="psa-badge z-30">FINALIZED</div>}
+
               <div className="grid grid-cols-[auto,1fr] gap-6 items-start">
-                {/* Logo block */}
+                {/* Logo */}
                 <div
-                  className="w-44 h-44 rounded-xl flex items-center justify-center"
+                  className="w-40 h-40 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: team.primary, boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.06)" }}
                 >
                   <img
                     src={team.logo}
                     alt={team.name}
-                    className="w-32 h-32 object-contain drop-shadow-[0_0_25px_rgba(0,224,255,0.4)]"
+                    className="w-28 h-28 object-contain drop-shadow-[0_0_25px_rgba(0,224,255,0.4)]"
                   />
                 </div>
 
-                {/* Quick facts */}
+                {/* Facts */}
                 <div className="min-w-0">
                   <div className="text-sm text-white/60">Manager</div>
                   <div className="text-xl font-semibold">{team.manager}</div>
@@ -61,21 +69,22 @@ export default function TeamEditor() {
                     <div className="text-base font-medium truncate">{team.mascot ?? team.name}</div>
                   </div>
 
-                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm min-w-0">
-                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10 truncate">
+                  {/* One-line badges (no wrapping; scroll if tight) */}
+                  <div className="mt-4 flex gap-3 text-sm whitespace-nowrap overflow-x-auto no-scrollbar pr-1">
+                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
                       Primary <span className="ml-1" style={{ color: team.primary }}>{team.primary}</span>
                     </span>
-                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10 truncate">
+                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
                       Secondary <span className="ml-1" style={{ color: team.secondary }}>{team.secondary}</span>
                     </span>
-                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10 truncate">
-                      Style: {team.stylePack}
+                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
+                      Style: {styleLabel}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="holo-anim absolute inset-0 opacity-10 z-0" />
+              <div className="holo-anim absolute inset-0 opacity-10 z-0 rounded-2xl" />
             </div>
           </div>
 
@@ -110,6 +119,13 @@ export default function TeamEditor() {
                     updateTeam(team.id, { stylePack: next });
                   }}
                 />
+                {/* Current selection shown Title Case */}
+                <div className="mt-3 text-sm">
+                  <span className="text-white/60 mr-2">Selected</span>
+                  <span className="px-2 py-1 rounded bg-white/5 border border-white/10">
+                    {STYLE_LABEL[(team.stylePack as StyleKey) ?? "modern"]}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -143,11 +159,11 @@ export default function TeamEditor() {
                 Back
               </button>
 
-              {/* Generate (refresh previews/assets) */}
+              {/* Generate for applied changes */}
               <button
                 onClick={() => generateTeam(team.id)}
                 className="px-4 py-2 rounded-lg bg-foil-cyan/20 border border-foil-cyan/50 hover:shadow-neon-cyan transition flex items-center gap-2"
-                title="Apply changes and refresh assets"
+                title="Apply changes and refresh previews"
               >
                 <Rocket size={18} /> Generate
               </button>
