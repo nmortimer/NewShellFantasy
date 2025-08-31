@@ -1,204 +1,147 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import {
-  PlugZap,
-  Info,
-  CalendarDays,
-  Trophy,
-  Download,
-  Sparkles,
-  ShieldCheck
-} from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useMemo } from "react";
+import { Palette, CheckCircle2, Wand2 } from "lucide-react";
+import RotaryKnob from "@/components/RotaryKnob";
+import ColorPicker from "@/components/ColorPicker";
 import { useLeagueStore } from "@/lib/store";
 
-export default function Landing() {
+const STYLE_KEYS = ["modern", "retro", "futuristic", "simple"] as const;
+type StyleKey = typeof STYLE_KEYS[number];
+
+export default function TeamEditor() {
   const router = useRouter();
-  const [leagueId, setLeagueId] = useState("");
-  const [showHelp, setShowHelp] = useState(false);
-  const { loadMockLeague, setLeagueId: setId } = useLeagueStore();
+  const params = useParams<{ id: string }>();
+  const id = params.id;
+  const { teams, updateTeam, finalizeTeam } = useLeagueStore();
+  const team = useMemo(() => teams.find((t) => t.id === id), [teams, id]);
 
-  const connectSleeper = async () => {
-    const id = leagueId.trim() || "MOCK";
-    setId(id);
-    if (id === "MOCK") {
-      await loadMockLeague();
-    } else {
-      // ping our route (kept simple; we use mock data in UI)
-      await fetch(`/api/league?leagueId=${encodeURIComponent(id)}`).catch(() => {});
-    }
-    router.push("/dashboard");
-  };
+  if (!team) {
+    return (
+      <section className="px-6 py-12">
+        <div className="max-w-5xl mx-auto">Team not found.</div>
+      </section>
+    );
+  }
 
-  const useDemo = async () => {
-    setId("MOCK");
-    await loadMockLeague();
-    router.push("/dashboard");
-  };
+  const styleIndex = Math.max(0, STYLE_KEYS.indexOf((team.stylePack as StyleKey) ?? "modern"));
 
   return (
-    <section className="relative px-6 pb-20 pt-24 bg-base-900">
-      <div className="absolute inset-0 bg-holo-gradient opacity-30 pointer-events-none" />
-
+    <section className="px-6 py-8">
       <div className="max-w-6xl mx-auto">
-        {/* Hero */}
-        <div className="text-center">
-          <h1 className="font-poster text-6xl md:text-7xl tracking-tight">
-            Run a Better League <span className="text-foil-cyan">— Instantly</span>
-          </h1>
-          <p className="mt-4 text-white/80 max-w-3xl mx-auto">
-            Fantasy League Studio turns your Sleeper league into weekly{" "}
-            <span className="font-semibold">matchup posters</span>,{" "}
-            <span className="font-semibold">recaps with scores</span>, and{" "}
-            <span className="font-semibold">power rankings</span>. No design skills.
-            No spreadsheets. Just plug in your league and share.
-          </p>
+        <h1 className="font-poster text-4xl tracking-tight mb-4">{team.name} Editor</h1>
 
-          {/* Connect */}
-          <div className="mt-8 flex flex-col md:flex-row gap-3 justify-center">
-            <input
-              className="px-4 py-3 rounded-lg bg-base-700 border border-white/10 focus-visible:glow w-full md:w-[28rem]"
-              placeholder='Paste Sleeper League ID (e.g., "987654321234567890")'
-              value={leagueId}
-              onChange={(e) => setLeagueId(e.target.value)}
-            />
-            <button
-              onClick={connectSleeper}
-              className="px-6 py-3 rounded-lg bg-foil-cyan/20 border border-foil-cyan/40 hover:shadow-neon-cyan transition"
-              title="Use your real Sleeper league"
-            >
-              <div className="flex items-center gap-2">
-                <PlugZap size={18} /> Connect Sleeper League
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Preview */}
+          <div className="lg:col-span-2 card-foil">
+            <div className="card-foil-inner p-6 min-h-[360px] relative">
+              {team.finalized && <div className="psa-badge z-30">FINALIZED</div>}
+              <div className="flex items-center gap-6">
+                <div
+                  className="w-48 h-48 rounded-xl flex items-center justify-center"
+                  style={{ background: team.primary, boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.06)" }}
+                >
+                  <img
+                    src={team.logo}
+                    alt={team.name}
+                    className="w-36 h-36 object-contain drop-shadow-[0_0_25px_rgba(0,224,255,0.4)]"
+                  />
+                </div>
+                <div className="flex-1">
+                  <div className="text-sm text-white/60">Manager</div>
+                  <div className="text-xl font-semibold">{team.manager}</div>
+
+                  <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
+                      Primary <span className="ml-1" style={{ color: team.primary }}>{team.primary}</span>
+                    </span>
+                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
+                      Secondary <span className="ml-1" style={{ color: team.secondary }}>{team.secondary}</span>
+                    </span>
+                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
+                      Style: {team.stylePack}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </button>
-            <button
-              onClick={useDemo}
-              className="px-6 py-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition"
-              title="Explore with a full demo league"
-            >
-              Try Demo League
-            </button>
+              <div className="holo-anim absolute inset-0 opacity-10 z-0" />
+            </div>
           </div>
 
-          <button
-            onClick={() => setShowHelp((v) => !v)}
-            className="mt-3 inline-flex items-center gap-2 text-sm text-white/70 hover:text-white/90"
-          >
-            <Info size={14} />
-            Where do I find my Sleeper League ID?
-          </button>
-
-          {showHelp && (
-            <div className="mt-3 mx-auto max-w-2xl text-left text-white/75 bg-base-800 border border-white/10 rounded-xl p-4">
-              <ol className="list-decimal list-inside space-y-2 text-sm">
-                <li>Open your league in the Sleeper app or on web.</li>
-                <li>Tap the share icon → “Copy League Link”.</li>
-                <li>
-                  Paste the link here and grab the long number at the end — that’s the{" "}
-                  <strong>League ID</strong>.
-                </li>
-              </ol>
-              <div className="text-xs mt-2 opacity-80">
-                Example: <code className="bg-black/30 px-1.5 py-0.5 rounded">https://sleeper.com/leagues/987654321234567890</code> →{" "}
-                <code className="bg-black/30 px-1.5 py-0.5 rounded">987654321234567890</code>
+          {/* Controls */}
+          <div className="space-y-6">
+            {/* Mascot */}
+            <div className="card-foil">
+              <div className="card-foil-inner p-5">
+                <div className="text-white/80 mb-2">Mascot</div>
+                <input
+                  value={team.mascot ?? team.name}
+                  onChange={(e) => updateTeam(team.id, { mascot: e.target.value })}
+                  placeholder="E.g., Bandits, Silverhawks, Wizards"
+                  className="w-full px-3 py-2 rounded bg-base-700 border border-white/10"
+                />
+                <div className="text-xs text-white/50 mt-1">
+                  Used by AI when generating logos and styles.
+                </div>
               </div>
             </div>
-          )}
-        </div>
 
-        {/* How it works */}
-        <div className="mt-14 grid grid-cols-1 md:grid-cols-3 gap-5">
-          <HowCard
-            icon={<PlugZap />}
-            title="1) Connect"
-            text="Paste your Sleeper League ID. We pull teams, names, and colors automatically."
-          />
-          <HowCard
-            icon={<Sparkles />}
-            title="2) Customize"
-            text="Tweak team cards in minutes — colors, styles, and logos. Lock them with a PSA-style badge."
-          />
-          <HowCard
-            icon={<CalendarDays />}
-            title="3) Share Weekly"
-            text="Auto-generate matchup previews, recaps, and power rankings. Download PNGs or share a public gallery."
-          />
-        </div>
+            {/* Style Dial */}
+            <div className="card-foil">
+              <div className="card-foil-inner p-5">
+                <div className="flex items-center gap-2 text-white/80 mb-3">
+                  <Wand2 size={16} /> Style
+                </div>
+                <RotaryKnob
+                  value={styleIndex}
+                  onChange={(idx) => {
+                    const next = STYLE_KEYS[idx as 0 | 1 | 2 | 3];
+                    updateTeam(team.id, { stylePack: next });
+                  }}
+                />
+              </div>
+            </div>
 
-        {/* What you get */}
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Benefit
-            icon={<Trophy />}
-            title="Matchup Posters"
-            text="Foil frames, neon glows, and bold titles for every weekly showdown."
-          />
-          <Benefit
-            icon={<ShieldCheck />}
-            title="Recaps & Scores"
-            text="Highlight winners with a VICTORY stamp and clean final totals."
-          />
-          <Benefit
-            icon={<Sparkles />}
-            title="Power Rankings"
-            text="Shimmering ranks with chrome badges. Perfect for weekly debates."
-          />
-          <Benefit
-            icon={<Download />}
-            title="Export & Gallery"
-            text="One-click ZIPs and a public, read-only gallery for your league."
-          />
-        </div>
+            {/* Colors */}
+            <div className="card-foil">
+              <div className="card-foil-inner p-5">
+                <div className="flex items-center gap-2 text-white/80 mb-3">
+                  <Palette size={16} /> Colors
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <ColorPicker
+                    label="Primary"
+                    color={team.primary}
+                    onChange={(c) => updateTeam(team.id, { primary: c })}
+                  />
+                  <ColorPicker
+                    label="Secondary"
+                    color={team.secondary}
+                    onChange={(c) => updateTeam(team.id, { secondary: c })}
+                  />
+                </div>
+              </div>
+            </div>
 
-        {/* Social proof-ish micro copy */}
-        <p className="mt-10 text-center text-sm text-white/60">
-          Built for commissioners — fast to start, fun to share, and easy to keep your league engaged all season.
-        </p>
+            {/* Actions */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition"
+              >
+                Back
+              </button>
+              <button
+                onClick={() => finalizeTeam(team.id)}
+                className="px-4 py-2 rounded-lg bg-foil-gold/20 border border-foil-gold/50 hover:shadow-foil-gold transition flex items-center gap-2"
+              >
+                <CheckCircle2 size={18} /> Finalize
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
-  );
-}
-
-function HowCard({
-  icon,
-  title,
-  text
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="card-foil">
-      <div className="card-foil-inner p-6">
-        <div className="text-foil-cyan flex items-center gap-2">
-          <span className="opacity-90">{icon}</span>
-          <span className="font-semibold">{title}</span>
-        </div>
-        <p className="text-sm text-white/75 mt-2">{text}</p>
-      </div>
-      <div className="holo-anim absolute inset-0 rounded-2xl opacity-10" />
-    </div>
-  );
-}
-
-function Benefit({
-  icon,
-  title,
-  text
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="card-foil">
-      <div className="card-foil-inner p-6">
-        <div className="text-foil-cyan">{icon}</div>
-        <h3 className="mt-3 font-semibold">{title}</h3>
-        <p className="text-sm text-white/70 mt-1">{text}</p>
-      </div>
-      <div className="holo-anim absolute inset-0 rounded-2xl opacity-10" />
-    </div>
   );
 }
