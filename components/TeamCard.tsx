@@ -18,12 +18,11 @@ export default function TeamCard({ team }: { team: Team }) {
         transition={{ type: "spring", stiffness: 120, damping: 12 }}
         style={{ transformStyle: "preserve-3d" }}
       >
-        {/* Inner: fixed layout so all cards align */}
         <div className="card-foil-inner relative p-4 flex flex-col overflow-hidden min-h-[340px]">
-          {/* PSA badge */}
-          {team.finalized && <div className="psa-badge">FINALIZED</div>}
+          {/* PSA badge ABOVE everything */}
+          {team.finalized && <div className="psa-badge z-30">FINALIZED</div>}
 
-          {/* LOGO BLOCK (fixed height, object-contain) */}
+          {/* LOGO BLOCK */}
           <div
             className="rounded-xl grid place-items-center border border-white/8 overflow-hidden"
             style={{ background: team.primary }}
@@ -46,7 +45,6 @@ export default function TeamCard({ team }: { team: Team }) {
             <div className="text-xs text-white/60 truncate" title={`Mgr: ${team.manager}`}>
               Mgr: {team.manager}
             </div>
-
             <div className="mt-3 flex flex-wrap gap-2 text-[11px]">
               <span className="px-2 py-1 rounded bg-white/7 border border-white/10">
                 <span className="opacity-70">Primary</span>{" "}
@@ -62,7 +60,7 @@ export default function TeamCard({ team }: { team: Team }) {
             </div>
           </div>
 
-          {/* ACTIONS (sticky to bottom so heights match) */}
+          {/* ACTIONS */}
           <div className="mt-auto pt-4">
             <div className="grid grid-cols-3 gap-2">
               <button
@@ -86,8 +84,8 @@ export default function TeamCard({ team }: { team: Team }) {
             </div>
           </div>
 
-          {/* Holo sweep (subtle) */}
-          <div className="holo-anim absolute inset-0 opacity-10 rounded-2xl pointer-events-none" />
+          {/* Holo sweep BEHIND content */}
+          <div className="holo-anim absolute inset-0 opacity-10 rounded-2xl pointer-events-none z-0" />
         </div>
       </motion.div>
     </div>
