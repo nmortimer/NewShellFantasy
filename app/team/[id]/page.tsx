@@ -65,7 +65,7 @@ export default function TeamEditor() {
                   <Wand2 size={16} /> Style Dial
                 </div>
                 <RotaryKnob
-                  value={["v1", "v2", "v3"].indexOf(team.stylePack)}
+                  value={["v1", "v2", "v3"].indexOf(team.stylePack ?? "v1")}
                   onChange={(idx) => {
                     const next = (["v1", "v2", "v3"] as const)[idx];
                     updateTeam(team.id, { stylePack: next });
