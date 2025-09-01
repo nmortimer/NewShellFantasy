@@ -41,7 +41,7 @@ export default function TeamEditor() {
         <h1 className="font-poster text-4xl tracking-tight mb-4">{team.name} Editor</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Preview / Team Info (compact, no wasted space) */}
+          {/* Team Info — compact; no extra bottom space */}
           <div className="lg:col-span-2 card-foil">
             <div className="card-foil-inner p-6 relative">
               {team.finalized && <div className="psa-badge z-30">FINALIZED</div>}
@@ -49,7 +49,7 @@ export default function TeamEditor() {
               <div className="grid grid-cols-[auto,1fr] gap-6 items-start">
                 {/* Logo */}
                 <div
-                  className="w-40 h-40 rounded-xl flex items-center justify-center shrink-0"
+                  className="w-36 h-36 rounded-xl flex items-center justify-center shrink-0"
                   style={{ background: team.primary, boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.06)" }}
                 >
                   <img
@@ -69,7 +69,7 @@ export default function TeamEditor() {
                     <div className="text-base font-medium truncate">{team.mascot ?? team.name}</div>
                   </div>
 
-                  {/* One-line badges (no wrapping; scroll if tight) */}
+                  {/* One-line badges; scroll if tight */}
                   <div className="mt-4 flex gap-3 text-sm whitespace-nowrap overflow-x-auto no-scrollbar pr-1">
                     <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
                       Primary <span className="ml-1" style={{ color: team.primary }}>{team.primary}</span>
@@ -84,7 +84,8 @@ export default function TeamEditor() {
                 </div>
               </div>
 
-              <div className="holo-anim absolute inset-0 opacity-10 z-0 rounded-2xl" />
+              {/* subtle holo behind content only */}
+              <div className="holo-anim absolute inset-0 opacity-10 z-0 rounded-2xl pointer-events-none" />
             </div>
           </div>
 
@@ -106,7 +107,7 @@ export default function TeamEditor() {
               </div>
             </div>
 
-            {/* Style Dial */}
+            {/* Style Dial (analog) */}
             <div className="card-foil">
               <div className="card-foil-inner p-5">
                 <div className="flex items-center gap-2 text-white/80 mb-3">
@@ -119,17 +120,10 @@ export default function TeamEditor() {
                     updateTeam(team.id, { stylePack: next });
                   }}
                 />
-                {/* Current selection shown Title Case */}
-                <div className="mt-3 text-sm">
-                  <span className="text-white/60 mr-2">Selected</span>
-                  <span className="px-2 py-1 rounded bg-white/5 border border-white/10">
-                    {STYLE_LABEL[(team.stylePack as StyleKey) ?? "modern"]}
-                  </span>
-                </div>
               </div>
             </div>
 
-            {/* Colors with swatches + hex */}
+            {/* Colors */}
             <div className="card-foil">
               <div className="card-foil-inner p-5">
                 <div className="flex items-center gap-2 text-white/80 mb-3">
@@ -159,7 +153,6 @@ export default function TeamEditor() {
                 Back
               </button>
 
-              {/* Generate for applied changes */}
               <button
                 onClick={() => generateTeam(team.id)}
                 className="px-4 py-2 rounded-lg bg-foil-cyan/20 border border-foil-cyan/50 hover:shadow-neon-cyan transition flex items-center gap-2"
