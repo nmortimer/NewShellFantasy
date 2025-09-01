@@ -31,11 +31,13 @@ export default function TeamEditor() {
   return (
     <section className="px-6 py-8">
       <div className="max-w-6xl mx-auto">
-        <h1 className="font-poster text-4xl tracking-tight mb-4">{team.name} Editor</h1>
+        <h1 className="font-poster text-4xl tracking-tight mb-4">
+          {team.name} Editor
+        </h1>
 
-        {/* Two columns. Right side stacks; left is a full-bleed Team Card that fills the column height. */}
+        {/* 2 columns; left is full Team Profile panel; right is a vertical stack */}
         <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-6 items-stretch">
-          {/* LEFT: full card */}
+          {/* LEFT: Team Profile (fills the whole column, no dead space) */}
           <div className="card-foil h-full">
             <div className="card-foil-inner relative p-0 h-full">
               {team.finalized && <div className="psa-badge z-30">FINALIZED</div>}
@@ -43,7 +45,7 @@ export default function TeamEditor() {
             </div>
           </div>
 
-          {/* RIGHT: controls stack */}
+          {/* RIGHT: Controls */}
           <div className="flex flex-col gap-6">
             {/* Mascot */}
             <div className="card-foil">
@@ -55,7 +57,9 @@ export default function TeamEditor() {
                   placeholder="E.g., Bandits, Silverhawks, Wizards"
                   className="w-full px-3 py-2 rounded bg-base-700 border border-white/10"
                 />
-                <div className="text-xs text-white/50 mt-1">Used by AI for logo/style generation.</div>
+                <div className="text-xs text-white/50 mt-1">
+                  Used by AI for logo/style generation.
+                </div>
               </div>
             </div>
 
@@ -67,7 +71,11 @@ export default function TeamEditor() {
                 </div>
                 <RotaryKnob
                   value={styleIndex}
-                  onChange={(idx) => updateTeam(team.id, { stylePack: STYLE_KEYS[idx as 0 | 1 | 2 | 3] })}
+                  onChange={(idx) =>
+                    updateTeam(team.id, {
+                      stylePack: STYLE_KEYS[idx as 0 | 1 | 2 | 3]
+                    })
+                  }
                 />
               </div>
             </div>
@@ -106,7 +114,17 @@ export default function TeamEditor() {
                 className="px-4 py-2 rounded-lg bg-foil-cyan/20 border border-foil-cyan/50 hover:shadow-neon-cyan transition flex items-center gap-2"
                 title="Apply changes and refresh previews"
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" className="opacity-80"><path fill="currentColor" d="M12 3v3l4-4l-4-4v3C6.48 1 2 5.48 2 11h2a8 8 0 0 1 8-8m8 8h2c0 5.52-4.48 10-10 10v3l-4-4l4-4v3a8 8 0 0 0 8-8"/></svg>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  className="opacity-80"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M12 3v3l4-4l-4-4v3C6.48 1 2 5.48 2 11h2a8 8 0 0 1 8-8m8 8h2c0 5.52-4.48 10-10 10v3l-4-4l4-4v3a8 8 0 0 0 8-8"
+                  />
+                </svg>
                 Generate
               </button>
               <button
