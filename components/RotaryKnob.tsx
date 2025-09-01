@@ -11,10 +11,10 @@ const LABELS: Record<StyleKey, string> = {
   simple: "Simple"
 };
 
-// Visual geometry for the dial
-const SIZE = 144;               // knob diameter (px) -> Tailwind w-36 h-36
-const RING_INSET = 10;          // inner ring inset
-const TICK_LEN = 10;
+// Geometry
+const WRAP = 180;          // outer wrapper (room for labels)
+const KNOB = 124;          // knob diameter
+const RING_INSET = 10;     // inner ring inset inside knob
 const SNAP_DEGS = [0, 90, 180, 270]; // top, right, bottom, left
 
 export default function RotaryKnob({
@@ -42,7 +42,7 @@ export default function RotaryKnob({
     const dx = clientX - cx;
     const dy = clientY - cy;
     const theta = Math.atan2(dy, dx);
-    const degRaw = (theta * 180) / Math.PI + 90;
+    const degRaw = (theta * 180) / Math.PI + 90;   // 0 at top
     const deg = ((degRaw + 360) % 360);
     const snap = nearestSnap(deg);
     setAngle(snap);
@@ -62,64 +62,85 @@ export default function RotaryKnob({
     window.addEventListener("pointerup", up);
   };
 
-  // Precompute label positions around the dial (outside the ring)
-  const ringRadius = SIZE / 2 - RING_INSET;      // ring radius
-  const labelRadius = ringRadius + 14;           // labels just outside ring
-  const center = SIZE / 2;
+  // Precompute radii
+  const center = WRAP / 2;
+  const knobR = KNOB / 2;
+  const ringR = knobR - RING_INSET;     // tick/needle radius
+  const labelR = knobR + 20;            // labels just outside the knob edge
 
   return (
-    <div className="flex flex-col items-start gap-3">
+    <div className="flex flex-col gap-3">
       <div
         ref={ref}
         onPointerDown={onPointerDown}
-        className="relative w-36 h-36 rounded-full bg-base-800 border border-white/10 shadow-[0_0_30px_rgba(0,224,255,0.12)] select-none cursor-grab active:cursor-grabbing"
+        className="relative select-none cursor-grab active:cursor-grabbing"
+        style={{ width: WRAP, height: WRAP }}
         aria-label="Style dial"
       >
-        {/* Outer ring */}
-        <div className="absolute inset-[10px] rounded-full border border-white/10" />
-
-        {/* Ticks at snap points */}
-        {SNAP_DEGS.map((d, i) => (
-          <span
-            key={i}
-            className="absolute left-1/2 top-1/2 bg-white/40 origin-bottom"
+        {/* Knob container centered inside wrapper */}
+        <div
+          className="absolute rounded-full bg-base-800 border border-white/10 shadow-[0_0_30px_rgba(0,224,255,0.12)]"
+          style={{
+            left: center - knobR,
+            top: center - knobR,
+            width: KNOB,
+            height: KNOB
+          }}
+        >
+          {/* inner ring */}
+          <div
+            className="absolute rounded-full border border-white/10"
             style={{
-              width: 2,
-              height: TICK_LEN,
-              transform: `translate(-50%,-${ringRadius - 2}px) rotate(${d}deg)`
+              left: RING_INSET,
+              top: RING_INSET,
+              width: KNOB - RING_INSET * 2,
+              height: KNOB - RING_INSET * 2
             }}
           />
-        ))}
 
-        {/* Needle */}
-        <div
-          className="absolute left-1/2 top-1/2 w-[3px] bg-foil-cyan origin-bottom rounded-sm transition-transform"
-          style={{
-            height: ringRadius - 6,
-            transform: `translate(-50%,-100%) rotate(${angle}deg)`
-          }}
-        />
+          {/* ticks */}
+          {SNAP_DEGS.map((d, i) => (
+            <span
+              key={i}
+              className="absolute left-1/2 top-1/2 bg-white/50 origin-bottom"
+              style={{
+                width: 2,
+                height: 10,
+                transform: `translate(-50%,-${ringR - 2}px) rotate(${d}deg)`
+              }}
+            />
+          ))}
 
-        {/* Center cap */}
-        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-base-900 border border-white/10 shadow-inner grid place-items-center text-[11px] text-white/70">
-          {LABELS[current]}
+          {/* needle */}
+          <div
+            className="absolute left-1/2 top-1/2 bg-foil-cyan origin-bottom rounded-sm transition-transform"
+            style={{
+              width: 3,
+              height: ringR - 6,
+              transform: `translate(-50%,-100%) rotate(${angle}deg)`
+            }}
+          />
+
+          {/* center cap */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-base-900 border border-white/10 shadow-inner grid place-items-center text-[11px] text-white/70">
+            {LABELS[current]}
+          </div>
         </div>
 
-        {/* Clickable labels around the dial (correctly positioned) */}
+        {/* labels around the knob (clickable) */}
         {OPTIONS.map((opt, i) => {
           const deg = SNAP_DEGS[i];
           const rad = (deg - 90) * (Math.PI / 180);
-          const x = center + Math.cos(rad) * labelRadius;
-          const y = center + Math.sin(rad) * labelRadius;
+          const x = center + Math.cos(rad) * labelR;
+          const y = center + Math.sin(rad) * labelR;
+          const active = current === opt;
           return (
             <button
               key={opt}
               type="button"
               onClick={() => { setAngle(SNAP_DEGS[i]); onChange(i); }}
               className={`absolute -translate-x-1/2 -translate-y-1/2 text-[11px] px-1.5 py-0.5 rounded border ${
-                current === opt
-                  ? "bg-foil-cyan/20 border-foil-cyan/50"
-                  : "bg-white/5 border-white/10 hover:bg-white/10"
+                active ? "bg-foil-cyan/20 border-foil-cyan/50" : "bg-white/5 border-white/10 hover:bg-white/10"
               }`}
               style={{ left: x, top: y }}
             >
@@ -128,8 +149,7 @@ export default function RotaryKnob({
           );
         })}
       </div>
-
-      {/* Single selected chip (no duplicates) */}
+      {/* Single selected chip */}
       <div className="text-sm">
         <span className="px-2 py-1 rounded bg-white/5 border border-white/10">{LABELS[current]}</span>
       </div>
