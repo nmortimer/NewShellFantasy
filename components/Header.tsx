@@ -4,8 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Trophy } from "lucide-react";
 
-// Keep href as plain string to avoid typedRoutes narrowing bugs
-const NAV: ReadonlyArray<{ label: string; href: string }> = [
+// --- Strong route typing compatible with typedRoutes ---
+type AppRoute = "/" | "/creation" | "/content" | "/gallery" | "/complete";
+// Next.js' Route type is internal; we cast via this helper to satisfy <Link>.
+const asRoute = (r: AppRoute) => r as unknown as import("next").Route;
+
+const NAV: ReadonlyArray<{ label: string; href: AppRoute }> = [
   { label: "Home",          href: "/" },
   { label: "Creation Hub",  href: "/creation" },
   { label: "Content",       href: "/content" },
@@ -18,7 +22,7 @@ export default function Header() {
   return (
     <header className="sticky top-0 z-40 w-full border-b border-white/10 backdrop-blur-md bg-black/40">
       <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href={asRoute("/")} className="flex items-center gap-2">
           <Trophy className="text-yellow-400" size={18} />
           <span className="font-semibold">LEAGUE STUDIO</span>
         </Link>
@@ -26,13 +30,12 @@ export default function Header() {
         <nav className="flex items-center gap-2">
           {NAV.map((n) => {
             const active =
-              pathname === n.href ||
-              (n.href !== "/" && (pathname?.startsWith(n.href) ?? false));
+              pathname === n.href || (n.href !== "/" && (pathname?.startsWith(n.href) ?? false));
 
             return (
               <Link
                 key={n.href}
-                href={n.href} // plain string; works with or without typedRoutes
+                href={asRoute(n.href)} // <-- cast to Next's Route so typedRoutes is satisfied
                 className={`px-3 py-1.5 rounded-lg border transition ${
                   active
                     ? "border-foil-cyan/50 bg-foil-cyan/10"
@@ -45,7 +48,7 @@ export default function Header() {
           })}
 
           <Link
-            href="/complete"
+            href={asRoute("/complete")}
             className="ml-2 px-3 py-1.5 rounded-lg border border-purple-400/40 bg-purple-500/10 hover:bg-purple-500/20 transition flex items-center gap-1"
           >
             <span role="img" aria-label="lock">🔒</span> Finalize
