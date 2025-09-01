@@ -7,19 +7,18 @@ import type { Team } from "@/lib/store";
 
 export default function TeamCard({ team }: { team: Team }) {
   const router = useRouter();
-  const { regenerateTeam, finalizeTeam } = useLeagueStore();
+  const { generateTeam, finalizeTeam } = useLeagueStore();
 
   return (
     <article className="card-foil h-full">
       <div className="card-foil-inner h-full rounded-2xl overflow-hidden flex flex-col">
-        {/* MEDIA: fixed 16:9 area for consistent heights */}
+        {/* MEDIA: fixed 16:9 for consistent heights */}
         <div className="relative w-full pt-[56.25%] bg-black/30">
           {team.finalized && (
             <div className="psa-badge z-20 absolute right-2 top-2">FINALIZED</div>
           )}
           <div className="absolute inset-0 p-4">
             <div className="w-full h-full rounded-lg bg-gradient-to-br from-base-800/70 to-base-900/70 border border-white/10 grid place-items-center">
-              {/* Team logo placeholder or logo image */}
               <img
                 src={team.logo}
                 alt={team.name}
@@ -68,7 +67,7 @@ export default function TeamCard({ team }: { team: Team }) {
               <span className="ml-1.5">Edit</span>
             </button>
             <button
-              onClick={() => regenerateTeam(team.id)}
+              onClick={() => generateTeam(team.id)}
               className="btn-subtle"
               title="Regenerate"
             >
@@ -89,8 +88,3 @@ export default function TeamCard({ team }: { team: Team }) {
     </article>
   );
 }
-
-/* ---- small button class helpers (tailwind) ----
-   If you don't already have these in globals, Tailwind will inline them via @apply.
-   You can also replace with your existing styles if you prefer.
-*/
