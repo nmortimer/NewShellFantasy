@@ -39,60 +39,59 @@ export default function TeamEditor() {
       <div className="max-w-6xl mx-auto">
         <h1 className="font-poster text-4xl tracking-tight mb-4">{team.name} Editor</h1>
 
-        {/* IMPORTANT: each right-card is its own grid item so the left DOES NOT stretch */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* Left: Team info (row 1, spans 2 cols) */}
-          <div className="lg:col-span-2">
-            <div className="card-foil">
-              <div className="card-foil-inner p-6 relative">
-                {team.finalized && <div className="psa-badge z-30">FINALIZED</div>}
+        {/* 2 columns; right is a vertical stack so the left never stretches */}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-6 items-start">
+          {/* LEFT: Team Info (auto height, no canvas filler) */}
+          <div className="card-foil">
+            <div className="card-foil-inner p-6 relative">
+              {team.finalized && <div className="psa-badge z-30">FINALIZED</div>}
 
-                <div className="grid grid-cols-[auto,1fr] gap-6 items-start">
-                  {/* Logo */}
-                  <div
-                    className="w-36 h-36 rounded-xl flex items-center justify-center shrink-0"
-                    style={{ background: team.primary, boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.06)" }}
-                  >
-                    <img
-                      src={team.logo}
-                      alt={team.name}
-                      className="w-28 h-28 object-contain drop-shadow-[0_0_25px_rgba(0,224,255,0.4)]"
-                    />
-                  </div>
-
-                  {/* Facts */}
-                  <div className="min-w-0">
-                    <div className="text-sm text-white/60">Manager</div>
-                    <div className="text-xl font-semibold">{team.manager}</div>
-
-                    <div className="mt-3">
-                      <div className="text-sm text-white/60">Mascot</div>
-                      <div className="text-base font-medium truncate">{team.mascot ?? team.name}</div>
-                    </div>
-
-                    {/* One-line badges; scroll if tight */}
-                    <div className="mt-4 flex gap-3 text-sm whitespace-nowrap overflow-x-auto no-scrollbar pr-1">
-                      <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
-                        Primary <span className="ml-1" style={{ color: team.primary }}>{team.primary}</span>
-                      </span>
-                      <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
-                        Secondary <span className="ml-1" style={{ color: team.secondary }}>{team.secondary}</span>
-                      </span>
-                      <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
-                        Style: {STYLE_LABEL[styleKey]}
-                      </span>
-                    </div>
-                  </div>
+              <div className="grid grid-cols-[auto,1fr] gap-6 items-start">
+                {/* Logo */}
+                <div
+                  className="w-36 h-36 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: team.primary, boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.06)" }}
+                >
+                  <img
+                    src={team.logo}
+                    alt={team.name}
+                    className="w-28 h-28 object-contain drop-shadow-[0_0_25px_rgba(0,224,255,0.4)]"
+                  />
                 </div>
 
-                {/* subtle holo behind content only */}
-                <div className="holo-anim absolute inset-0 opacity-10 z-0 rounded-2xl pointer-events-none" />
+                {/* Facts */}
+                <div className="min-w-0">
+                  <div className="text-sm text-white/60">Manager</div>
+                  <div className="text-xl font-semibold">{team.manager}</div>
+
+                  <div className="mt-3">
+                    <div className="text-sm text-white/60">Mascot</div>
+                    <div className="text-base font-medium truncate">{team.mascot ?? team.name}</div>
+                  </div>
+
+                  {/* Single-line badges; scroll if tight */}
+                  <div className="mt-4 flex gap-3 text-sm whitespace-nowrap overflow-x-auto no-scrollbar pr-1">
+                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
+                      Primary <span className="ml-1" style={{ color: team.primary }}>{team.primary}</span>
+                    </span>
+                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
+                      Secondary <span className="ml-1" style={{ color: team.secondary }}>{team.secondary}</span>
+                    </span>
+                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
+                      Style: {STYLE_LABEL[styleKey]}
+                    </span>
+                  </div>
+                </div>
               </div>
+
+              {/* subtle holo behind content only (doesn't affect height) */}
+              <div className="holo-anim absolute inset-0 opacity-10 z-0 rounded-2xl pointer-events-none" />
             </div>
           </div>
 
-          {/* Right: Mascot (row 1, col 3) */}
-          <div>
+          {/* RIGHT: vertical stack (prevents row stretching) */}
+          <div className="flex flex-col gap-6">
+            {/* Mascot */}
             <div className="card-foil">
               <div className="card-foil-inner p-5">
                 <div className="text-white/80 mb-2">Mascot</div>
@@ -107,10 +106,8 @@ export default function TeamEditor() {
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Right: Style (row 2, col 3) */}
-          <div>
+            {/* Style */}
             <div className="card-foil">
               <div className="card-foil-inner p-5">
                 <div className="flex items-center gap-2 text-white/80 mb-3">
@@ -125,10 +122,8 @@ export default function TeamEditor() {
                 />
               </div>
             </div>
-          </div>
 
-          {/* Right: Colors (row 3, col 3) */}
-          <div>
+            {/* Colors */}
             <div className="card-foil">
               <div className="card-foil-inner p-5">
                 <div className="flex items-center gap-2 text-white/80 mb-3">
@@ -148,31 +143,31 @@ export default function TeamEditor() {
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Right: Actions (row 4, col 3) */}
-          <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => router.push("/dashboard")}
-              className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition"
-            >
-              Back
-            </button>
+            {/* Actions */}
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition"
+              >
+                Back
+              </button>
 
-            <button
-              onClick={() => generateTeam(team.id)}
-              className="px-4 py-2 rounded-lg bg-foil-cyan/20 border border-foil-cyan/50 hover:shadow-neon-cyan transition flex items-center gap-2"
-              title="Apply changes and refresh previews"
-            >
-              <Rocket size={18} /> Generate
-            </button>
+              <button
+                onClick={() => generateTeam(team.id)}
+                className="px-4 py-2 rounded-lg bg-foil-cyan/20 border border-foil-cyan/50 hover:shadow-neon-cyan transition flex items-center gap-2"
+                title="Apply changes and refresh previews"
+              >
+                <Rocket size={18} /> Generate
+              </button>
 
-            <button
-              onClick={() => finalizeTeam(team.id)}
-              className="px-4 py-2 rounded-lg bg-foil-gold/20 border border-foil-gold/50 hover:shadow-foil-gold transition flex items-center gap-2"
-            >
-              <CheckCircle2 size={18} /> Finalize
-            </button>
+              <button
+                onClick={() => finalizeTeam(team.id)}
+                className="px-4 py-2 rounded-lg bg-foil-gold/20 border border-foil-gold/50 hover:shadow-foil-gold transition flex items-center gap-2"
+              >
+                <CheckCircle2 size={18} /> Finalize
+              </button>
+            </div>
           </div>
         </div>
       </div>
