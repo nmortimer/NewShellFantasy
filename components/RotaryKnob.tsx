@@ -12,17 +12,16 @@ const LABELS: Record<StyleKey, string> = {
 };
 
 // Geometry
-const WRAP = 180;          // outer wrapper (room for labels)
+const WRAP = 180;          // room for labels
 const KNOB = 124;          // knob diameter
-const RING_INSET = 10;     // inner ring inset inside knob
-const SNAP_DEGS = [0, 90, 180, 270]; // top, right, bottom, left
+const RING_INSET = 10;
+const SNAP_DEGS = [0, 90, 180, 270];
 
 export default function RotaryKnob({
   value,
   onChange
 }: {
-  /** index 0..3 */
-  value: number;
+  value: number; // 0..3
   onChange: (index: number) => void;
 }) {
   const [angle, setAngle] = useState(indexToAngle(value));
@@ -30,9 +29,7 @@ export default function RotaryKnob({
   const idx = clamp(value, 0, 3);
   const current = useMemo(() => OPTIONS[idx], [idx]);
 
-  useEffect(() => {
-    setAngle(indexToAngle(value));
-  }, [value]);
+  useEffect(() => setAngle(indexToAngle(value)), [value]);
 
   const setFromPointer = (clientX: number, clientY: number) => {
     if (!ref.current) return;
@@ -41,12 +38,10 @@ export default function RotaryKnob({
     const cy = rect.top + rect.height / 2;
     const dx = clientX - cx;
     const dy = clientY - cy;
-    const theta = Math.atan2(dy, dx);
-    const degRaw = (theta * 180) / Math.PI + 90;   // 0 at top
-    const deg = ((degRaw + 360) % 360);
+    const deg = ((Math.atan2(dy, dx) * 180) / Math.PI + 90 + 360) % 360;
     const snap = nearestSnap(deg);
     setAngle(snap);
-    onChange(angleToIndex(snap));
+    onChange(SNAP_DEGS.indexOf(snap));
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -62,22 +57,21 @@ export default function RotaryKnob({
     window.addEventListener("pointerup", up);
   };
 
-  // Precompute radii
   const center = WRAP / 2;
   const knobR = KNOB / 2;
-  const ringR = knobR - RING_INSET;     // tick/needle radius
-  const labelR = knobR + 20;            // labels just outside the knob edge
+  const ringR = knobR - RING_INSET;
+  const labelR = knobR + 20;
 
   return (
     <div className="flex flex-col gap-3">
       <div
         ref={ref}
         onPointerDown={onPointerDown}
-        className="relative select-none cursor-grab active:cursor-grabbing"
+        className="relative select-none cursor-grab active:cursor-grabbing mx-auto"
         style={{ width: WRAP, height: WRAP }}
         aria-label="Style dial"
       >
-        {/* Knob container centered inside wrapper */}
+        {/* knob */}
         <div
           className="absolute rounded-full bg-base-800 border border-white/10 shadow-[0_0_30px_rgba(0,224,255,0.12)]"
           style={{
@@ -99,9 +93,9 @@ export default function RotaryKnob({
           />
 
           {/* ticks */}
-          {SNAP_DEGS.map((d, i) => (
+          {SNAP_DEGS.map((d) => (
             <span
-              key={i}
+              key={d}
               className="absolute left-1/2 top-1/2 bg-white/50 origin-bottom"
               style={{
                 width: 2,
@@ -121,13 +115,13 @@ export default function RotaryKnob({
             }}
           />
 
-          {/* center cap */}
+          {/* cap */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-base-900 border border-white/10 shadow-inner grid place-items-center text-[11px] text-white/70">
             {LABELS[current]}
           </div>
         </div>
 
-        {/* labels around the knob (clickable) */}
+        {/* labels */}
         {OPTIONS.map((opt, i) => {
           const deg = SNAP_DEGS[i];
           const rad = (deg - 90) * (Math.PI / 180);
@@ -149,8 +143,9 @@ export default function RotaryKnob({
           );
         })}
       </div>
-      {/* Single selected chip */}
-      <div className="text-sm">
+
+      {/* Selected chip (single) */}
+      <div className="text-sm mx-auto">
         <span className="px-2 py-1 rounded bg-white/5 border border-white/10">{LABELS[current]}</span>
       </div>
     </div>
@@ -158,12 +153,7 @@ export default function RotaryKnob({
 }
 
 /* helpers */
-function clamp(n: number, a: number, b: number) { return Math.max(a, Math.min(b, n)); }
-function indexToAngle(i: number) { return SNAP_DEGS[clamp(i, 0, 3)]; }
-function angleToIndex(deg: number) {
-  const snap = nearestSnap(deg);
-  return SNAP_DEGS.indexOf(snap);
-}
+function indexToAngle(i: number) { return SNAP_DEGS[Math.max(0, Math.min(3, i))]; }
 function nearestSnap(deg: number) {
   let best = SNAP_DEGS[0], min = 1e9;
   for (const d of SNAP_DEGS) {
@@ -172,3 +162,4 @@ function nearestSnap(deg: number) {
   }
   return best;
 }
+function clamp(n: number, a: number, b: number) { return Math.max(a, Math.min(b, n)); }
