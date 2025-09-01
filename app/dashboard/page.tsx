@@ -1,44 +1,54 @@
-
 "use client";
 
 import { useEffect } from "react";
 import TeamCard from "@/components/TeamCard";
-import ProgressBar from "@/components/ProgressBar";
 import { useLeagueStore } from "@/lib/store";
-import { useRouter } from "next/navigation";
 
-export default function Dashboard() {
-  const { teams, finalizedCount, loadMockLeague, leagueId } = useLeagueStore();
-  const router = useRouter();
+export default function CreationHub() {
+  const {
+    teams,
+    finalizedCount,
+    loadMockLeague,
+    leagueName,
+    leagueId,
+  } = useLeagueStore();
 
   useEffect(() => {
-    if (!teams.length) {
-      loadMockLeague();
-    }
+    // if nothing loaded yet, load mock league so the page isn't empty
+    if (!teams.length) void loadMockLeague();
   }, [teams.length, loadMockLeague]);
 
+  const total = teams.length || 12;
+  const pct = total ? Math.round((finalizedCount / total) * 100) : 0;
+
   return (
-    <section className="px-6 py-8 bg-base-900">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between gap-4">
+    <section className="px-6 py-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-end justify-between gap-4 mb-3">
           <h1 className="font-poster text-4xl tracking-tight">
-            League Dashboard <span className="text-white/50 text-base align-middle">({leagueId || "MOCK"})</span>
+            Creation Hub{leagueId ? ` (${leagueName})` : ""}
           </h1>
           <button
-            onClick={() => router.push("/content")}
-            className="px-4 py-2 rounded-lg bg-foil-purple/20 border border-foil-purple/50 hover:shadow-neon-purple transition disabled:opacity-40"
-            disabled={finalizedCount < 12}
-            title={finalizedCount < 12 ? "Finalize all 12 teams to unlock Content Hub" : "Open Content Hub"}
+            onClick={() => location.assign("/content")}
+            className="px-3 py-1.5 rounded-lg border border-foil-cyan/40 bg-foil-cyan/10 hover:bg-foil-cyan/20 transition"
           >
             Open Content Hub
           </button>
         </div>
 
-        <div className="mt-6">
-          <ProgressBar />
+        {/* Progress */}
+        <div className="mb-2 text-sm text-white/70">
+          Finalize Progress — {finalizedCount}/{total}
+        </div>
+        <div className="w-full h-2 rounded bg-white/10 overflow-hidden mb-6">
+          <div
+            className="h-full bg-foil-cyan/60"
+            style={{ width: `${pct}%` }}
+          />
         </div>
 
-        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* Cards grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {teams.map((t) => (
             <TeamCard key={t.id} team={t} />
           ))}
