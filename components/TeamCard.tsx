@@ -7,12 +7,12 @@ import type { Team } from "@/lib/store";
 
 export default function TeamCard({ team }: { team: Team }) {
   const router = useRouter();
-  const { generateTeam, finalizeTeam } = useLeagueStore(); // <- generateTeam (not regenerateTeam)
+  const { generateTeam, finalizeTeam } = useLeagueStore(); // <-- generateTeam
 
   return (
     <article className="card-foil h-full">
       <div className="card-foil-inner h-full rounded-2xl overflow-hidden flex flex-col">
-        {/* MEDIA: fixed 16:9 for consistent heights across all cards */}
+        {/* MEDIA: fixed 16:9 for consistent heights */}
         <div className="relative w-full pt-[56.25%] bg-black/30">
           {team.finalized && (
             <div className="psa-badge z-20 absolute right-2 top-2">FINALIZED</div>
