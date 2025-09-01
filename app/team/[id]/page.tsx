@@ -41,7 +41,7 @@ export default function TeamEditor() {
         <h1 className="font-poster text-4xl tracking-tight mb-4">{team.name} Editor</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Team Info — compact; no extra bottom space */}
+          {/* Team Info — compact and auto-height */}
           <div className="lg:col-span-2 card-foil">
             <div className="card-foil-inner p-6 relative">
               {team.finalized && <div className="psa-badge z-30">FINALIZED</div>}
@@ -84,7 +84,7 @@ export default function TeamEditor() {
                 </div>
               </div>
 
-              {/* subtle holo behind content only */}
+              {/* No extra spacer; holo layer is absolute and doesn't affect height */}
               <div className="holo-anim absolute inset-0 opacity-10 z-0 rounded-2xl pointer-events-none" />
             </div>
           </div>
@@ -107,7 +107,7 @@ export default function TeamEditor() {
               </div>
             </div>
 
-            {/* Style Dial (analog) */}
+            {/* Style Dial (analog, single selected chip handled inside component) */}
             <div className="card-foil">
               <div className="card-foil-inner p-5">
                 <div className="flex items-center gap-2 text-white/80 mb-3">
