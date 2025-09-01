@@ -5,21 +5,15 @@ import { useMemo } from "react";
 import { Palette, CheckCircle2, Wand2, Rocket } from "lucide-react";
 import RotaryKnob from "@/components/RotaryKnob";
 import ColorPicker from "@/components/ColorPicker";
+import TeamHero from "@/components/TeamHero";
 import { useLeagueStore } from "@/lib/store";
 
 const STYLE_KEYS = ["modern", "retro", "futuristic", "simple"] as const;
 type StyleKey = typeof STYLE_KEYS[number];
-const STYLE_LABEL: Record<StyleKey, string> = {
-  modern: "Modern",
-  retro: "Retro",
-  futuristic: "Futuristic",
-  simple: "Simple"
-};
 
 export default function TeamEditor() {
   const router = useRouter();
-  const params = useParams<{ id: string }>();
-  const id = params.id;
+  const { id } = useParams<{ id: string }>();
   const { teams, updateTeam, finalizeTeam, generateTeam } = useLeagueStore();
   const team = useMemo(() => teams.find((t) => t.id === id), [teams, id]);
 
@@ -31,66 +25,26 @@ export default function TeamEditor() {
     );
   }
 
-  const currentStyle = (team.stylePack as StyleKey) ?? "modern";
-  const styleIndex = Math.max(0, STYLE_KEYS.indexOf(currentStyle));
-  const styleLabel = STYLE_LABEL[currentStyle];
+  const styleKey: StyleKey = (team.stylePack as StyleKey) ?? "modern";
+  const styleIndex = Math.max(0, STYLE_KEYS.indexOf(styleKey));
 
   return (
     <section className="px-6 py-8">
       <div className="max-w-6xl mx-auto">
         <h1 className="font-poster text-4xl tracking-tight mb-4">{team.name} Editor</h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Team Info — compact and auto-height */}
-          <div className="lg:col-span-2 card-foil">
-            <div className="card-foil-inner p-6 relative">
+        {/* Two columns. Right side stacks; left is a full-bleed Team Card that fills the column height. */}
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-6 items-stretch">
+          {/* LEFT: full card */}
+          <div className="card-foil h-full">
+            <div className="card-foil-inner relative p-0 h-full">
               {team.finalized && <div className="psa-badge z-30">FINALIZED</div>}
-
-              <div className="grid grid-cols-[auto,1fr] gap-6 items-start">
-                {/* Logo */}
-                <div
-                  className="w-36 h-36 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: team.primary, boxShadow: "inset 0 0 0 2px rgba(255,255,255,0.06)" }}
-                >
-                  <img
-                    src={team.logo}
-                    alt={team.name}
-                    className="w-28 h-28 object-contain drop-shadow-[0_0_25px_rgba(0,224,255,0.4)]"
-                  />
-                </div>
-
-                {/* Facts */}
-                <div className="min-w-0">
-                  <div className="text-sm text-white/60">Manager</div>
-                  <div className="text-xl font-semibold">{team.manager}</div>
-
-                  <div className="mt-3">
-                    <div className="text-sm text-white/60">Mascot</div>
-                    <div className="text-base font-medium truncate">{team.mascot ?? team.name}</div>
-                  </div>
-
-                  {/* One-line badges; scroll if tight */}
-                  <div className="mt-4 flex gap-3 text-sm whitespace-nowrap overflow-x-auto no-scrollbar pr-1">
-                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
-                      Primary <span className="ml-1" style={{ color: team.primary }}>{team.primary}</span>
-                    </span>
-                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
-                      Secondary <span className="ml-1" style={{ color: team.secondary }}>{team.secondary}</span>
-                    </span>
-                    <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
-                      Style: {styleLabel}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* No extra spacer; holo layer is absolute and doesn't affect height */}
-              <div className="holo-anim absolute inset-0 opacity-10 z-0 rounded-2xl pointer-events-none" />
+              <TeamHero team={team} />
             </div>
           </div>
 
-          {/* Controls */}
-          <div className="space-y-6">
+          {/* RIGHT: controls stack */}
+          <div className="flex flex-col gap-6">
             {/* Mascot */}
             <div className="card-foil">
               <div className="card-foil-inner p-5">
@@ -101,13 +55,11 @@ export default function TeamEditor() {
                   placeholder="E.g., Bandits, Silverhawks, Wizards"
                   className="w-full px-3 py-2 rounded bg-base-700 border border-white/10"
                 />
-                <div className="text-xs text-white/50 mt-1">
-                  Used by AI when generating logos and styles.
-                </div>
+                <div className="text-xs text-white/50 mt-1">Used by AI for logo/style generation.</div>
               </div>
             </div>
 
-            {/* Style Dial (analog, single selected chip handled inside component) */}
+            {/* Style */}
             <div className="card-foil">
               <div className="card-foil-inner p-5">
                 <div className="flex items-center gap-2 text-white/80 mb-3">
@@ -115,10 +67,7 @@ export default function TeamEditor() {
                 </div>
                 <RotaryKnob
                   value={styleIndex}
-                  onChange={(idx) => {
-                    const next = STYLE_KEYS[idx as 0 | 1 | 2 | 3];
-                    updateTeam(team.id, { stylePack: next });
-                  }}
+                  onChange={(idx) => updateTeam(team.id, { stylePack: STYLE_KEYS[idx as 0 | 1 | 2 | 3] })}
                 />
               </div>
             </div>
@@ -152,15 +101,14 @@ export default function TeamEditor() {
               >
                 Back
               </button>
-
               <button
                 onClick={() => generateTeam(team.id)}
                 className="px-4 py-2 rounded-lg bg-foil-cyan/20 border border-foil-cyan/50 hover:shadow-neon-cyan transition flex items-center gap-2"
                 title="Apply changes and refresh previews"
               >
-                <Rocket size={18} /> Generate
+                <svg width="16" height="16" viewBox="0 0 24 24" className="opacity-80"><path fill="currentColor" d="M12 3v3l4-4l-4-4v3C6.48 1 2 5.48 2 11h2a8 8 0 0 1 8-8m8 8h2c0 5.52-4.48 10-10 10v3l-4-4l4-4v3a8 8 0 0 0 8-8"/></svg>
+                Generate
               </button>
-
               <button
                 onClick={() => finalizeTeam(team.id)}
                 className="px-4 py-2 rounded-lg bg-foil-gold/20 border border-foil-gold/50 hover:shadow-foil-gold transition flex items-center gap-2"
