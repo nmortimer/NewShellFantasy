@@ -4,24 +4,28 @@ import type { Team } from "@/lib/store";
 import { motion } from "framer-motion";
 
 export default function TeamHero({ team }: { team: Team }) {
-  const mascot = team.mascot ?? team.name;
+  const mascot = (team.mascot ?? team.name).toUpperCase();
 
   return (
     <div className="relative h-full min-h-[380px] rounded-2xl overflow-hidden">
-      {/* Foil / gradient background driven by team colors */}
+      {/* Background: subtle foil + team color glows */}
       <div
         className="absolute inset-0"
         style={{
-          background: `radial-gradient(120% 120% at 0% 0%, ${team.primary}22 0%, transparent 45%),
-                       radial-gradient(120% 120% at 100% 100%, ${team.secondary}22 0%, transparent 45%),
+          background: `radial-gradient(120% 120% at 0% 0%, ${hexWithAlpha(
+            team.primary,
+            0.18
+          )} 0%, transparent 45%),
+                       radial-gradient(120% 120% at 100% 100%, ${hexWithAlpha(
+                         team.secondary,
+                         0.18
+                       )} 0%, transparent 45%),
                        linear-gradient(140deg, #0D0D0D 10%, #121212 55%, #181818 100%)`
         }}
       />
-
-      {/* Subtle holo sweep */}
       <div className="absolute inset-0 holo-anim opacity-[0.08] pointer-events-none" />
 
-      {/* Top row: logo + quick facts + badges */}
+      {/* Content */}
       <div className="relative z-10 p-6">
         <div className="grid grid-cols-[auto,1fr] gap-6 items-start">
           {/* Logo block */}
@@ -43,19 +47,27 @@ export default function TeamHero({ team }: { team: Team }) {
 
             <div className="mt-2">
               <div className="text-sm text-white/60">Mascot</div>
-              <div className="text-base font-medium truncate">{mascot}</div>
+              <div className="text-base font-medium truncate">
+                {team.mascot ?? team.name}
+              </div>
             </div>
 
             <div className="mt-3 flex gap-3 text-sm whitespace-nowrap overflow-x-auto no-scrollbar pr-1">
               <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
-                Primary <span className="ml-1" style={{ color: team.primary }}>{team.primary}</span>
+                Primary{" "}
+                <span className="ml-1" style={{ color: team.primary }}>
+                  {team.primary}
+                </span>
               </span>
               <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
-                Secondary <span className="ml-1" style={{ color: team.secondary }}>{team.secondary}</span>
+                Secondary{" "}
+                <span className="ml-1" style={{ color: team.secondary }}>
+                  {team.secondary}
+                </span>
               </span>
               {team.stylePack && (
                 <span className="px-2 py-1 rounded bg-white/10 border border-white/10">
-                  Style: {team.stylePack[0].toUpperCase() + team.stylePack.slice(1)}
+                  Style: {capitalize(team.stylePack)}
                 </span>
               )}
             </div>
@@ -63,30 +75,47 @@ export default function TeamHero({ team }: { team: Team }) {
         </div>
       </div>
 
-      {/* Watermark logo center/back to fill the rest visually */}
-      <motion.img
-        src={team.logo}
-        alt=""
-        aria-hidden
-        initial={{ scale: 0.9, opacity: 0.08 }}
-        animate={{ scale: 1, opacity: 0.12 }}
+      {/* Faint mascot/team watermark (no duplicate logo, no #id) */}
+      <motion.div
+        initial={{ opacity: 0.04, scale: 0.98 }}
+        animate={{ opacity: 0.08, scale: 1 }}
         transition={{ duration: 0.6, ease: "easeOut" }}
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[60%] max-h-[60%] object-contain pointer-events-none"
-        style={{ filter: "drop-shadow(0 0 30px rgba(0, 224, 255, 0.25))" }}
-      />
+        className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        style={{ color: team.primary }}
+      >
+        <span className="font-poster text-[140px] leading-none tracking-wide uppercase">
+          {mascot}
+        </span>
+      </motion.div>
 
-      {/* Bottom lockup: big team name */}
-      <div className="absolute left-0 right-0 bottom-0 p-6">
-        <div className="inline-flex flex-col">
-          <span className="font-poster text-4xl leading-none tracking-wide">
-            {team.name}
-          </span>
-          <span className="text-white/60 text-sm">#{team.id}</span>
-        </div>
+      {/* Bottom left lockup: team name only */}
+      <div className="absolute left-0 bottom-0 p-6">
+        <span className="font-poster text-3xl leading-none tracking-wide">
+          {team.name}
+        </span>
       </div>
 
-      {/* Border frame */}
+      {/* Frame */}
       <div className="absolute inset-0 rounded-2xl ring-1 ring-white/10 pointer-events-none" />
     </div>
   );
+}
+
+/* helpers */
+function capitalize(s: string) {
+  return s ? s[0].toUpperCase() + s.slice(1) : s;
+}
+
+/** convert #RRGGBB to rgba with alpha (0..1) */
+function hexWithAlpha(hex: string, alpha: number) {
+  try {
+    const h = hex.replace("#", "");
+    if (h.length !== 6) return `rgba(0,0,0,${alpha})`;
+    const r = parseInt(h.slice(0, 2), 16);
+    const g = parseInt(h.slice(2, 4), 16);
+    const b = parseInt(h.slice(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  } catch {
+    return `rgba(0,0,0,${alpha})`;
+  }
 }
