@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Trophy } from "lucide-react";
 
-const NAV = [
+// Keep href as plain string to avoid typedRoutes narrowing bugs
+const NAV: ReadonlyArray<{ label: string; href: string }> = [
   { label: "Home",          href: "/" },
   { label: "Creation Hub",  href: "/creation" },
   { label: "Content",       href: "/content" },
   { label: "Gallery",       href: "/gallery" },
-] as const;
+];
 
 export default function Header() {
   const pathname = usePathname();
@@ -31,7 +32,7 @@ export default function Header() {
             return (
               <Link
                 key={n.href}
-                href={n.href as any} {/* typedRoutes quirk: cast to avoid over-narrowing */}
+                href={n.href} // plain string; works with or without typedRoutes
                 className={`px-3 py-1.5 rounded-lg border transition ${
                   active
                     ? "border-foil-cyan/50 bg-foil-cyan/10"
@@ -44,7 +45,7 @@ export default function Header() {
           })}
 
           <Link
-            href={"/complete" as any}
+            href="/complete"
             className="ml-2 px-3 py-1.5 rounded-lg border border-purple-400/40 bg-purple-500/10 hover:bg-purple-500/20 transition flex items-center gap-1"
           >
             <span role="img" aria-label="lock">🔒</span> Finalize
