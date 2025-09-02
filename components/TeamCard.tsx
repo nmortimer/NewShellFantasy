@@ -7,7 +7,7 @@ import type { Team } from "@/lib/store";
 
 export default function TeamCard({ team }: { team: Team }) {
   const router = useRouter();
-  const { generateTeam, finalizeTeam } = useLeagueStore(); // <-- generateTeam
+  const store = useLeagueStore(); // <-- no destructuring; avoids stale names
 
   return (
     <article className="card-foil h-full">
@@ -67,7 +67,7 @@ export default function TeamCard({ team }: { team: Team }) {
               <span className="ml-1.5">Edit</span>
             </button>
             <button
-              onClick={() => generateTeam(team.id)}
+              onClick={() => store.generateTeam(team.id)}
               className="btn-subtle"
               title="Regenerate"
             >
@@ -75,7 +75,7 @@ export default function TeamCard({ team }: { team: Team }) {
               <span className="ml-1.5">Regen</span>
             </button>
             <button
-              onClick={() => finalizeTeam(team.id)}
+              onClick={() => store.finalizeTeam(team.id)}
               className="btn-cta-gold"
               title="Finalize"
             >
