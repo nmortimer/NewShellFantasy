@@ -1,92 +1,163 @@
 "use client";
 
 import { create } from "zustand";
-import mock from "@/data/mockLeague.json";
+
+/* ---------- Types ---------- */
+export type StyleKey = "modern" | "retro" | "futuristic" | "simple";
 
 export type Team = {
   id: string;
   name: string;
   manager: string;
+  logo: string;
   primary: string;
   secondary: string;
-  logo: string;
+  stylePack?: StyleKey;
   mascot?: string;
-  stylePack?: "modern" | "retro" | "futuristic" | "simple";
   finalized?: boolean;
-  lastGeneratedAt?: number;
+  avatar?: string;
+};
+
+type ImportedLeague = {
+  platform: "sleeper";
+  leagueId: string;
+  leagueName: string;
+  teams: Team[];
 };
 
 type State = {
-  leagueId: string | null;
-  leagueName: string;
+  leagueId?: string;
+  leagueName?: string;
   teams: Team[];
   finalizedCount: number;
-  setLeagueId: (id: string) => void;
+
+  /* actions */
   loadMockLeague: () => Promise<void>;
+  setLeagueFromImport: (payload: ImportedLeague) => void;
   updateTeam: (id: string, patch: Partial<Team>) => void;
-  randomizeTeamStyle: (id: string) => void;
+  generateTeam: (id: string) => void;
   finalizeTeam: (id: string) => void;
-  generateTeam: (id: string) => void; // NEW: hook for future AI
 };
 
-const STYLES: Array<Team["stylePack"]> = ["modern", "retro", "futuristic", "simple"];
+/* ---------- Helpers ---------- */
+function pollinationsLogoUrl(opts: {
+  mascot: string;
+  primary: string;
+  secondary: string;
+  style: StyleKey;
+}) {
+  const { mascot, primary, secondary, style } = opts;
+  const stylePhrase =
+    style === "modern"
+      ? "modern professional sports logo, sleek bold lines, neon edge"
+      : style === "retro"
+      ? "retro vintage sports logo, flat emblem 80s style"
+      : style === "futuristic"
+      ? "futuristic sci-fi sports logo, cyberpunk glow"
+      : "minimal flat icon sports logo, bold silhouette";
 
-export const useLeagueStore = create<State>((set, get) => ({
-  leagueId: null,
-  leagueName: "Your League",
+  const prompt = [
+    "Premium sports team logo, centered emblem",
+    `mascot: ${mascot}`,
+    stylePhrase,
+    "esports / NBA alternate logo aesthetic",
+    "no text, transparent or flat background",
+    `primary color ${primary}, secondary color ${secondary}`,
+    "holographic trading card vibe, subtle neon glow",
+  ]
+    .join(", ")
+    .replace(/\s+/g, " ");
+
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`;
+}
+
+/* Simple seeded mock to keep UI alive without API */
+function mockTeams(): Team[] {
+  const names = [
+    "Silverhawks",
+    "Neon Wolves",
+    "Crimson Tide",
+    "Retro Rockets",
+    "Cyber Knights",
+    "Golden Bears",
+    "Phantom Foxes",
+    "Aqua Storm",
+    "Violet Vipers",
+    "Iron Giants",
+    "Night Owls",
+    "Scarlet Sharks",
+  ];
+  return names.map((n, i) => {
+    const id = `t${i + 1}`;
+    const primary = ["#00E0FF", "#FFD700", "#FF3B3B", "#9B30FF"][i % 4];
+    const secondary = ["#181818", "#0D0D0D", "#ffffff", "#111111"][i % 4];
+    const stylePack: StyleKey = (["modern", "retro", "futuristic", "simple"] as const)[i % 4];
+    const mascot = n;
+    return {
+      id,
+      name: n,
+      manager: `Manager ${i + 1}`,
+      primary,
+      secondary,
+      stylePack,
+      mascot,
+      finalized: false,
+      logo: pollinationsLogoUrl({ mascot, primary, secondary, style: stylePack }),
+    };
+  });
+}
+
+/* ---------- Store ---------- */
+export const useLeagueStore = create<State>()((set, get) => ({
+  leagueId: undefined,
+  leagueName: undefined,
   teams: [],
   finalizedCount: 0,
 
-  setLeagueId: (id) => set({ leagueId: id }),
-
-  loadMockLeague: async () => {
-    const seeded = (mock.teams as Team[]).map((t, idx) => ({
-      ...t,
-      mascot: t.name,
-      stylePack: STYLES[idx % STYLES.length],
-      finalized: false,
-      lastGeneratedAt: Date.now()
-    }));
+  async loadMockLeague() {
+    const teams = mockTeams();
     set({
-      teams: seeded,
-      leagueId: mock.leagueId,
-      leagueName: mock.leagueName,
-      finalizedCount: 0
+      leagueId: "mock",
+      leagueName: "Mock League",
+      teams,
+      finalizedCount: teams.filter((t) => t.finalized).length,
     });
   },
 
-  updateTeam: (id, patch) =>
-    set((s) => {
-      const teams = s.teams.map((t) => (t.id === id ? { ...t, ...patch } : t));
-      const finalizedCount = teams.filter((t) => t.finalized).length;
-      return { teams, finalizedCount };
-    }),
+  setLeagueFromImport(payload) {
+    const teams = (payload.teams || []).map((t) => ({
+      ...t,
+      finalized: !!t.finalized,
+    }));
+    set({
+      leagueId: payload.leagueId,
+      leagueName: payload.leagueName,
+      teams,
+      finalizedCount: teams.filter((t) => t.finalized).length,
+    });
+  },
 
-  randomizeTeamStyle: (id) =>
-    set((s) => {
-      const teams = s.teams.map((t) => {
-        if (t.id !== id) return t;
-        const i = STYLES.indexOf(t.stylePack || "modern");
-        const next = STYLES[(i + 1) % STYLES.length];
-        return { ...t, stylePack: next };
-      });
-      return { teams };
-    }),
+  updateTeam(id, patch) {
+    const teams = get().teams.map((t) => (t.id === id ? { ...t, ...patch } : t));
+    set({ teams });
+  },
 
-  finalizeTeam: (id) =>
-    set((s) => {
-      const teams = s.teams.map((t) => (t.id === id ? { ...t, finalized: true } : t));
-      const finalizedCount = teams.filter((t) => t.finalized).length;
-      return { teams, finalizedCount };
-    }),
+  generateTeam(id) {
+    const state = get();
+    const teams = state.teams.map((t) => {
+      if (t.id !== id) return t;
+      const mascot = (t.mascot ?? t.name).trim();
+      const style: StyleKey = t.stylePack ?? "modern";
+      const primary = t.primary ?? "#00E0FF";
+      const secondary = t.secondary ?? "#181818";
+      const logo = pollinationsLogoUrl({ mascot, primary, secondary, style });
+      return { ...t, logo };
+    });
+    set({ teams });
+  },
 
-  // Placeholder for future AI generation – for now this simply stamps a timestamp.
-  // You can later replace this with a call that regenerates logos/posters.
-  generateTeam: (id) =>
-    set((s) => {
-      const teams = s.teams.map((t) =>
-        t.id === id ? { ...t, lastGeneratedAt: Date.now(), finalized: false } : t
-      );
-      return { teams };
-    })
+  finalizeTeam(id) {
+    const teams = get().teams.map((t) => (t.id === id ? { ...t, finalized: true } : t));
+    set({ teams, finalizedCount: teams.filter((t) => t.finalized).length });
+  },
 }));
