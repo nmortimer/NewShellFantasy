@@ -14,20 +14,14 @@ type PosterCardProps = {
   kind: Kind;
   data: Matchup | Recap | Power;
   week?: number;
-  leagueName?: string; // can be undefined from store; we’ll default it
+  leagueName?: string; // may be undefined from store
   fileName?: string;
 };
 
 export default function PosterCard(props: PosterCardProps) {
-  const {
-    kind,
-    data,
-    week,
-    leagueName,
-    fileName,
-  } = props;
+  const { kind, data, week, leagueName, fileName } = props;
 
-  // Safe defaults to satisfy strict typing on child components
+  // ✅ Safe defaults to satisfy child prop types
   const safeWeek = week ?? 1;
   const safeLeagueName = leagueName ?? "League Studio";
 
@@ -37,7 +31,6 @@ export default function PosterCard(props: PosterCardProps) {
   async function handleDownload() {
     if (!ref.current) return;
     const node = ref.current;
-    // ensure device pixel ratio upscale for sharp PNGs
     const canvas = await html2canvas(node, {
       backgroundColor: null,
       scale: Math.max(2, Math.min(3, window.devicePixelRatio || 1.5)),
@@ -86,9 +79,7 @@ export default function PosterCard(props: PosterCardProps) {
             />
           )}
 
-          {kind === "power" && (
-            <PowerPoster p={data as Power} />
-          )}
+          {kind === "power" && <PowerPoster p={data as Power} />}
 
           <div className="holo-anim absolute inset-0 opacity-10" />
         </div>
