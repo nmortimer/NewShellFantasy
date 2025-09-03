@@ -17,26 +17,33 @@ export default function TeamCard({ team }: { team: Team }) {
         transition={{ type: "spring", stiffness: 250, damping: 20, mass: 0.6 }}
         className="card-foil-inner h-full rounded-2xl overflow-hidden flex flex-col"
       >
-        {/* MEDIA: fixed 16:9 area for identical tops */}
-        <div className="relative w-full pt-[56.25%] bg-gradient-to-br from-base-800/70 to-base-900/70">
+        {/* MEDIA: fixed 16:9 for identical tops, but transparent so only the square stage reads */}
+        <div className="relative w-full pt-[56.25%]">
           {team.finalized && (
             <div className="psa-badge z-20 absolute right-2 top-2">FINALIZED</div>
           )}
 
-          {/* Centered SQUARE STAGE (enforces identical logo zone) */}
+          {/* Centered SQUARE STAGE = the only visible zone */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="stage relative rounded-xl border border-white/10 bg-black/30 shadow-inner overflow-hidden
-                            w-[72%] max-w-[320px] aspect-square grid place-items-center">
-              {/* vignettes / soft glow */}
+            <div
+              className="relative rounded-xl border border-white/10 bg-black/30 shadow-inner overflow-hidden
+                         w-[72%] max-w-[320px] aspect-square grid place-items-center"
+            >
+              {/* soft color vignettes for polish */}
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
-                  background:
-                    `radial-gradient(60% 60% at 30% 30%, ${hexA(team.primary, 0.18)} 0%, transparent 70%),
-                     radial-gradient(60% 60% at 70% 70%, ${hexA(team.secondary, 0.18)} 0%, transparent 70%)`,
+                  background: `radial-gradient(60% 60% at 30% 30%, ${hexA(
+                    team.primary,
+                    0.18
+                  )} 0%, transparent 70%),
+                               radial-gradient(60% 60% at 70% 70%, ${hexA(
+                                 team.secondary,
+                                 0.18
+                               )} 0%, transparent 70%)`,
                 }}
               />
-              {/* Logo always perfectly centered & contained */}
+              {/* Logo always centered and contained within the stage */}
               <img
                 src={team.logo}
                 alt={team.name}
@@ -47,12 +54,12 @@ export default function TeamCard({ team }: { team: Team }) {
           </div>
         </div>
 
-        {/* BODY (flex-1 keeps equal heights) */}
+        {/* BODY */}
         <div className="flex-1 px-4 pt-3 pb-2">
           <h3 className="font-semibold leading-tight truncate">{team.name}</h3>
           <p className="text-xs text-white/60 -mt-0.5 truncate">Mgr: {team.manager}</p>
 
-          {/* Meta – single line with ellipsis */}
+          {/* Single-line meta */}
           <div className="mt-2 text-xs whitespace-nowrap overflow-hidden text-ellipsis">
             <span className="mr-3">
               Primary{" "}
@@ -106,8 +113,7 @@ export default function TeamCard({ team }: { team: Team }) {
   );
 }
 
-/* ---------- helpers ---------- */
-
+/* helpers */
 function hexA(hex: string, a: number) {
   const v = hex?.startsWith("#") ? hex.slice(1) : hex;
   if (!/^[0-9a-fA-F]{6}$/.test(v)) return `rgba(0,0,0,${a})`;
