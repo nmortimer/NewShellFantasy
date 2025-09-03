@@ -9,30 +9,42 @@ type Platform = "sleeper" | "mfl" | "fleaflicker";
 
 export default function Home() {
   const router = useRouter();
-  const { loadMockLeague } = useLeagueStore();
+  const { loadMockLeague, setLeagueFromImport } = useLeagueStore();
   const [platform, setPlatform] = useState<Platform>("sleeper");
   const [leagueId, setLeagueId] = useState("");
   const [loading, setLoading] = useState<"load" | "mock" | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const canLoad = leagueId.trim().length > 0;
+  const canLoad = platform === "sleeper" && leagueId.trim().length > 0;
 
   async function handleLoad() {
-    // For now we just load the mock league and carry the platform/id in the URL.
-    // We’ll wire real APIs later.
+    setError(null);
+    if (platform !== "sleeper") return; // future: support mfl/fleaflicker
     try {
       setLoading("load");
-      await loadMockLeague();
+      const res = await fetch(`/api/import/sleeper?leagueId=${encodeURIComponent(leagueId.trim())}`);
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j?.error || `Failed to load league (${res.status})`);
+      }
+      const data = await res.json();
+      setLeagueFromImport(data);
       router.push(`/creation?platform=${platform}&leagueId=${encodeURIComponent(leagueId.trim())}`);
+    } catch (e: any) {
+      setError(e?.message || "Unable to load league");
     } finally {
       setLoading(null);
     }
   }
 
   async function handleMock() {
+    setError(null);
     try {
       setLoading("mock");
       await loadMockLeague();
       router.push("/creation");
+    } catch (e: any) {
+      setError(e?.message || "Unable to set up mock league");
     } finally {
       setLoading(null);
     }
@@ -51,50 +63,39 @@ export default function Home() {
           FANTASY LEAGUE <span className="text-foil-cyan">STUDIO</span>
         </h1>
         <p className="text-center text-white/70 max-w-3xl mx-auto">
-          Auto-generate weekly matchup posters, last week’s recaps, and power rankings for your league.
+          Auto-generate weekly matchup posters, recaps, and power rankings for your league.
         </p>
 
         {/* Stepper */}
         <section className="mt-10 grid gap-6">
-          {/* Step 1 */}
+          {/* Step 1 & 2 container */}
           <div className="rounded-2xl border border-white/10 card-foil overflow-hidden">
             <div className="card-foil-inner p-0">
-              <div className="p-5 flex items-center justify-between gap-4">
+              {/* Step 1 */}
+              <div className="p-5 flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-3">
                   <StepBadge>1</StepBadge>
                   <div>
-                    <div className="text-lg font-semibold">Choose your fantasy platform</div>
-                    <div className="text-sm text-white/60">Sleeper, MFL, or Fleaflicker.</div>
+                    <div className="text-lg font-semibold">Choose your platform</div>
+                    <div className="text-sm text-white/60">Start with Sleeper. (MFL/Fleaflicker soon)</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <PlatformButton
-                    selected={platform === "sleeper"}
-                    onClick={() => setPlatform("sleeper")}
-                    label="Sleeper"
-                  />
-                  <PlatformButton
-                    selected={platform === "mfl"}
-                    onClick={() => setPlatform("mfl")}
-                    label="MFL"
-                  />
-                  <PlatformButton
-                    selected={platform === "fleaflicker"}
-                    onClick={() => setPlatform("fleaflicker")}
-                    label="Fleaflicker"
-                  />
+                  <PlatformButton selected={platform === "sleeper"} onClick={() => setPlatform("sleeper")} label="Sleeper" />
+                  <PlatformButton selected={platform === "mfl"} onClick={() => setPlatform("mfl")} label="MFL" />
+                  <PlatformButton selected={platform === "fleaflicker"} onClick={() => setPlatform("fleaflicker")} label="Fleaflicker" />
                 </div>
               </div>
+
               <Divider />
+
               {/* Step 2 */}
-              <div className="p-5 flex items-center justify-between gap-4">
+              <div className="p-5 flex items-center justify-between gap-4 flex-wrap">
                 <div className="flex items-center gap-3">
                   <StepBadge>2</StepBadge>
                   <div>
                     <div className="text-lg font-semibold">Paste your League ID</div>
-                    <div className="text-sm text-white/60">
-                      We’ll import names/colors and build your Creation Hub.
-                    </div>
+                    <div className="text-sm text-white/60">We’ll import teams and owners into your Creation Hub.</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 w-full max-w-xl">
@@ -103,7 +104,7 @@ export default function Home() {
                     <input
                       value={leagueId}
                       onChange={(e) => setLeagueId(e.target.value)}
-                      placeholder="Enter League ID (e.g., 123456789012345678)"
+                      placeholder="Enter Sleeper League ID (e.g., 123456789012345678)"
                       className="w-full pl-9 pr-3 py-2 rounded-lg bg-base-700 border border-white/10 focus:outline-none focus:ring-2 focus:ring-foil-cyan/40"
                     />
                   </div>
@@ -125,7 +126,7 @@ export default function Home() {
           </div>
 
           {/* Or Try Mock League */}
-          <div className="rounded-2xl border border-white/10 bg-black/30 p-5 flex items-center justify-between">
+          <div className="rounded-2xl border border-white/10 bg-black/30 p-5 flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-3">
               <MousePointerClick size={18} className="opacity-80" />
               <div>
@@ -143,6 +144,12 @@ export default function Home() {
               {loading === "mock" ? "Setting up…" : "Try Mock League"}
             </button>
           </div>
+
+          {error && (
+            <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3 text-sm">
+              {error}
+            </div>
+          )}
         </section>
       </div>
     </main>
