@@ -17,9 +17,8 @@ async function getJson<T>(url: string, timeoutMs = 15000): Promise<T> {
   }
 }
 
-/** Deterministic color from id (keeps a pleasing, bright palette) */
+/** Deterministic color from id (keeps a bright palette) */
 function colorFromId(id: string) {
-  // hash -> 0..360
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) % 360;
   const primary = `#${hslToHex(h, 70, 50)}`;
@@ -67,7 +66,6 @@ function pollinationsLogoUrl(opts: {
     .join(", ")
     .replace(/\s+/g, " ");
 
-  // You can add width/height if you’d like (e.g., &width=768&height=768)
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`;
 }
 
@@ -85,18 +83,13 @@ export async function GET(req: Request) {
   const leagueId = searchParams.get("leagueId")?.trim();
 
   if (!leagueId) {
-    return NextResponse.json(
-      { error: "Missing leagueId" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Missing leagueId" }, { status: 400 });
   }
 
   try {
     const [league, users] = await Promise.all([
       getJson<SleeperLeague>(`https://api.sleeper.app/v1/league/${leagueId}`),
-      getJson<SleeperUser[]>(
-        `https://api.sleeper.app/v1/league/${leagueId}/users`
-      ),
+      getJson<SleeperUser[]>(`https://api.sleeper.app/v1/league/${leagueId}/users`),
     ]);
 
     const leagueName = league?.name ?? `Sleeper League ${leagueId}`;
@@ -113,6 +106,8 @@ export async function GET(req: Request) {
         primary,
         secondary,
         stylePack,
+        mascot: teamName,
+        finalized: false,
         logo: pollinationsLogoUrl({
           mascot: teamName,
           primary,
