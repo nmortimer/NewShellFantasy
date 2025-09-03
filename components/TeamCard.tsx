@@ -17,28 +17,42 @@ export default function TeamCard({ team }: { team: Team }) {
         transition={{ type: "spring", stiffness: 250, damping: 20, mass: 0.6 }}
         className="card-foil-inner h-full rounded-2xl overflow-hidden flex flex-col"
       >
-        {/* MEDIA: fixed 16:9 area so every card top is identical */}
+        {/* MEDIA: fixed 16:9 area for identical tops */}
         <div className="relative w-full pt-[56.25%] bg-gradient-to-br from-base-800/70 to-base-900/70">
           {team.finalized && (
             <div className="psa-badge z-20 absolute right-2 top-2">FINALIZED</div>
           )}
-          <div className="absolute inset-0 grid place-items-center">
-            <div className="w-[78%] h-[78%] rounded-xl grid place-items-center border border-white/10 bg-black/30 shadow-inner">
+
+          {/* Centered SQUARE STAGE (enforces identical logo zone) */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="stage relative rounded-xl border border-white/10 bg-black/30 shadow-inner overflow-hidden
+                            w-[72%] max-w-[320px] aspect-square grid place-items-center">
+              {/* vignettes / soft glow */}
+              <div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background:
+                    `radial-gradient(60% 60% at 30% 30%, ${hexA(team.primary, 0.18)} 0%, transparent 70%),
+                     radial-gradient(60% 60% at 70% 70%, ${hexA(team.secondary, 0.18)} 0%, transparent 70%)`,
+                }}
+              />
+              {/* Logo always perfectly centered & contained */}
               <img
                 src={team.logo}
                 alt={team.name}
-                className="max-w-[82%] max-h-[82%] object-contain drop-shadow-[0_0_22px_rgba(0,224,255,0.28)]"
+                className="relative z-[1] block w-[80%] h-[80%] object-contain"
+                style={{ filter: "drop-shadow(0 0 22px rgba(0,224,255,0.28))" }}
               />
             </div>
           </div>
         </div>
 
-        {/* BODY (flex-1 keeps heights equal regardless of names) */}
+        {/* BODY (flex-1 keeps equal heights) */}
         <div className="flex-1 px-4 pt-3 pb-2">
           <h3 className="font-semibold leading-tight truncate">{team.name}</h3>
           <p className="text-xs text-white/60 -mt-0.5 truncate">Mgr: {team.manager}</p>
 
-          {/* Meta – force single line with ellipsis */}
+          {/* Meta – single line with ellipsis */}
           <div className="mt-2 text-xs whitespace-nowrap overflow-hidden text-ellipsis">
             <span className="mr-3">
               Primary{" "}
@@ -58,7 +72,7 @@ export default function TeamCard({ team }: { team: Team }) {
           </div>
         </div>
 
-        {/* FOOTER (fixed height; buttons never wrap the card) */}
+        {/* FOOTER */}
         <div className="px-3 pb-3">
           <div className="grid grid-cols-3 gap-2">
             <button
@@ -90,4 +104,15 @@ export default function TeamCard({ team }: { team: Team }) {
       </motion.div>
     </article>
   );
+}
+
+/* ---------- helpers ---------- */
+
+function hexA(hex: string, a: number) {
+  const v = hex?.startsWith("#") ? hex.slice(1) : hex;
+  if (!/^[0-9a-fA-F]{6}$/.test(v)) return `rgba(0,0,0,${a})`;
+  const r = parseInt(v.slice(0, 2), 16);
+  const g = parseInt(v.slice(2, 4), 16);
+  const b = parseInt(v.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
