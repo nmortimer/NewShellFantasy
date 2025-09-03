@@ -17,19 +17,19 @@ export default function TeamCard({ team }: { team: Team }) {
         transition={{ type: "spring", stiffness: 250, damping: 20, mass: 0.6 }}
         className="card-foil-inner h-full rounded-2xl overflow-hidden flex flex-col"
       >
-        {/* MEDIA: fixed 16:9 for identical tops, but transparent so only the square stage reads */}
-        <div className="relative w-full pt-[56.25%]">
+        {/* MEDIA: fixed 16:9; now clips all inner visuals so nothing bleeds into the title */}
+        <div className="relative w-full pt-[56.25%] overflow-hidden">
           {team.finalized && (
             <div className="psa-badge z-20 absolute right-2 top-2">FINALIZED</div>
           )}
 
-          {/* Centered SQUARE STAGE = the only visible zone */}
+          {/* Centered SQUARE STAGE */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div
               className="relative rounded-xl border border-white/10 bg-black/30 shadow-inner overflow-hidden
-                         w-[72%] max-w-[320px] aspect-square grid place-items-center"
+                         w-[68%] max-w-[320px] aspect-square grid place-items-center"
             >
-              {/* soft color vignettes for polish */}
+              {/* soft color vignettes */}
               <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
@@ -43,7 +43,7 @@ export default function TeamCard({ team }: { team: Team }) {
                                )} 0%, transparent 70%)`,
                 }}
               />
-              {/* Logo always centered and contained within the stage */}
+              {/* Logo centered & contained */}
               <img
                 src={team.logo}
                 alt={team.name}
@@ -58,8 +58,6 @@ export default function TeamCard({ team }: { team: Team }) {
         <div className="flex-1 px-4 pt-3 pb-2">
           <h3 className="font-semibold leading-tight truncate">{team.name}</h3>
           <p className="text-xs text-white/60 -mt-0.5 truncate">Mgr: {team.manager}</p>
-
-          {/* Single-line meta */}
           <div className="mt-2 text-xs whitespace-nowrap overflow-hidden text-ellipsis">
             <span className="mr-3">
               Primary{" "}
