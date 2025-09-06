@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { buildPollinationsLogoUrl } from "@/lib/image";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
@@ -39,37 +40,6 @@ function hslToHex(h: number, s: number, l: number) {
   return `${toHex(f(0))}${toHex(f(8))}${toHex(f(4))}`;
 }
 
-function pollinationsLogoUrl(opts: {
-  mascot: string;
-  primary: string;
-  secondary: string;
-  style: "modern" | "retro" | "futuristic" | "simple";
-}) {
-  const { mascot, primary, secondary, style } = opts;
-  const stylePhrase =
-    style === "modern"
-      ? "modern professional sports logo, sleek bold lines, neon edge"
-      : style === "retro"
-      ? "retro vintage sports logo, flat emblem 80s style"
-      : style === "futuristic"
-      ? "futuristic sci-fi sports logo, cyberpunk glow"
-      : "minimal flat icon sports logo, bold silhouette";
-
-  const prompt = [
-    "Premium sports team logo, centered emblem",
-    `mascot: ${mascot}`,
-    stylePhrase,
-    "esports / NBA alternate logo aesthetic",
-    "no text, transparent or flat background",
-    `primary color ${primary}, secondary color ${secondary}`,
-    "holographic trading card vibe, subtle neon glow",
-  ]
-    .join(", ")
-    .replace(/\s+/g, " ");
-
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`;
-}
-
 /** ---------- Sleeper types ---------- */
 type SleeperLeague = { name?: string };
 type SleeperUser = {
@@ -91,7 +61,6 @@ export async function GET(req: Request, ctx: { params: { provider: string } }) {
       { status: 400 }
     );
   }
-
   if (!leagueId) {
     return NextResponse.json({ error: "Missing leagueId" }, { status: 400 });
   }
@@ -108,6 +77,7 @@ export async function GET(req: Request, ctx: { params: { provider: string } }) {
       const teamName = u.metadata?.team_name?.trim() || u.display_name;
       const { primary, secondary } = colorFromId(u.user_id);
       const stylePack = "modern" as const;
+
       return {
         id: u.user_id,
         name: teamName,
@@ -118,11 +88,12 @@ export async function GET(req: Request, ctx: { params: { provider: string } }) {
         stylePack,
         mascot: teamName,
         finalized: false,
-        logo: pollinationsLogoUrl({
+        logo: buildPollinationsLogoUrl({
           mascot: teamName,
           primary,
           secondary,
           style: stylePack,
+          seed: u.user_id, // stable per-team
         }),
       };
     });
