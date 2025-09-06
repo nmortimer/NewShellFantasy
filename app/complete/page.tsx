@@ -7,26 +7,34 @@ import { downloadAllLogosZip } from "@/lib/export";
 export default function CompletePage() {
   const { teams, leagueId, leagueName, finalizedCount } = useLeagueStore();
 
-  const done = useMemo(() => finalizedCount >= 12, [finalizedCount]);
-  const downloadable = useMemo(() => teams.filter((t) => !!t.logo), [teams]);
+  // Only include teams that actually have a logo and assert logo as string
+  const exportable = useMemo(
+    () =>
+      teams
+        .filter((t) => !!t.logo)
+        .map((t) => ({ id: t.id, name: t.name, logo: t.logo as string })),
+    [teams]
+  );
+
+  const allDone = finalizedCount >= 12;
 
   return (
     <main className="px-6 py-10">
       <div className="max-w-5xl mx-auto">
         <h1 className="font-poster text-4xl mb-2">All Set!</h1>
         <p className="text-white/70">
-          {leagueName ? `League: ${leagueName}` : "Your league is ready."}{" "}
-          {done
-            ? "All teams are finalized — you can export everything below."
-            : `You’ve finalized ${finalizedCount}/12 teams. You can still export current logos, or head back to finish the rest.`}
+          {leagueName ? `League: ${leagueName}. ` : ""}
+          {allDone
+            ? "All teams are finalized — export your assets below."
+            : `You’ve finalized ${finalizedCount}/12 teams. You can export current logos now or go back to finish.`}
         </p>
 
         <div className="mt-8 flex gap-3 justify-center">
           <button
-            onClick={() => downloadAllLogosZip(teams, leagueId)}
-            disabled={downloadable.length === 0}
+            onClick={() => downloadAllLogosZip(exportable, leagueId)}
+            disabled={exportable.length === 0}
             className={`px-6 py-3 rounded-lg border transition ${
-              downloadable.length === 0
+              exportable.length === 0
                 ? "opacity-50 cursor-not-allowed border-white/10 bg-white/5"
                 : "bg-foil-cyan/20 border-foil-cyan/40 hover:shadow-neon-cyan"
             }`}
