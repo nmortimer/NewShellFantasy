@@ -1,28 +1,19 @@
-"use client";
-
 import { create } from "zustand";
-
-/* ---------- Types ---------- */
-export type StyleKey = "modern" | "retro" | "futuristic" | "simple";
+import { persist } from "zustand/middleware";
+import { buildPollinationsLogoUrl, type LogoStyle } from "@/lib/image";
 
 export type Team = {
   id: string;
   name: string;
   manager: string;
-  logo: string;
+  mascot: string;
   primary: string;
   secondary: string;
-  stylePack?: StyleKey;
-  mascot?: string;
+  stylePack?: LogoStyle;
   finalized?: boolean;
+  logo?: string;
   avatar?: string;
-};
-
-type ImportedLeague = {
-  platform: "sleeper";
-  leagueId: string;
-  leagueName: string;
-  teams: Team[];
+  seed?: string; // optional, stabilize generations
 };
 
 type State = {
@@ -30,134 +21,88 @@ type State = {
   leagueName?: string;
   teams: Team[];
   finalizedCount: number;
-
-  /* actions */
-  loadMockLeague: () => Promise<void>;
-  setLeagueFromImport: (payload: ImportedLeague) => void;
+  setLeagueFromImport: (payload: {
+    leagueId: string;
+    leagueName: string;
+    teams: Team[];
+  }) => void;
   updateTeam: (id: string, patch: Partial<Team>) => void;
-  generateTeam: (id: string) => void;
   finalizeTeam: (id: string) => void;
+  regenerateTeam: (id: string) => Promise<void>;
 };
 
-/* ---------- Helpers ---------- */
-function pollinationsLogoUrl(opts: {
-  mascot: string;
-  primary: string;
-  secondary: string;
-  style: StyleKey;
-}) {
-  const { mascot, primary, secondary, style } = opts;
-  const stylePhrase =
-    style === "modern"
-      ? "modern professional sports logo, sleek bold lines, neon edge"
-      : style === "retro"
-      ? "retro vintage sports logo, flat emblem 80s style"
-      : style === "futuristic"
-      ? "futuristic sci-fi sports logo, cyberpunk glow"
-      : "minimal flat icon sports logo, bold silhouette";
-
-  const prompt = [
-    "Premium sports team logo, centered emblem",
-    `mascot: ${mascot}`,
-    stylePhrase,
-    "esports / NBA alternate logo aesthetic",
-    "no text, transparent or flat background",
-    `primary color ${primary}, secondary color ${secondary}`,
-    "holographic trading card vibe, subtle neon glow",
-  ]
-    .join(", ")
-    .replace(/\s+/g, " ");
-
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}`;
+function computeFinalizedCount(teams: Team[]) {
+  return teams.filter((t) => t.finalized).length;
 }
 
-/* Simple seeded mock to keep UI alive without API */
-function mockTeams(): Team[] {
-  const names = [
-    "Silverhawks",
-    "Neon Wolves",
-    "Crimson Tide",
-    "Retro Rockets",
-    "Cyber Knights",
-    "Golden Bears",
-    "Phantom Foxes",
-    "Aqua Storm",
-    "Violet Vipers",
-    "Iron Giants",
-    "Night Owls",
-    "Scarlet Sharks",
-  ];
-  return names.map((n, i) => {
-    const id = `t${i + 1}`;
-    const primary = ["#00E0FF", "#FFD700", "#FF3B3B", "#9B30FF"][i % 4];
-    const secondary = ["#181818", "#0D0D0D", "#ffffff", "#111111"][i % 4];
-    const stylePack: StyleKey = (["modern", "retro", "futuristic", "simple"] as const)[i % 4];
-    const mascot = n;
-    return {
-      id,
-      name: n,
-      manager: `Manager ${i + 1}`,
-      primary,
-      secondary,
-      stylePack,
-      mascot,
-      finalized: false,
-      logo: pollinationsLogoUrl({ mascot, primary, secondary, style: stylePack }),
-    };
-  });
-}
+export const useLeagueStore = create<State>()(
+  persist(
+    (set, get) => ({
+      leagueId: undefined,
+      leagueName: undefined,
+      teams: [],
+      finalizedCount: 0,
 
-/* ---------- Store ---------- */
-export const useLeagueStore = create<State>()((set, get) => ({
-  leagueId: undefined,
-  leagueName: undefined,
-  teams: [],
-  finalizedCount: 0,
+      setLeagueFromImport: ({ leagueId, leagueName, teams }) => {
+        set({
+          leagueId,
+          leagueName,
+          teams,
+          finalizedCount: computeFinalizedCount(teams),
+        });
+      },
 
-  async loadMockLeague() {
-    const teams = mockTeams();
-    set({
-      leagueId: "mock",
-      leagueName: "Mock League",
-      teams,
-      finalizedCount: teams.filter((t) => t.finalized).length,
-    });
-  },
+      updateTeam: (id, patch) => {
+        const teams = get().teams.map((t) => (t.id === id ? { ...t, ...patch } : t));
+        set({ teams, finalizedCount: computeFinalizedCount(teams) });
+      },
 
-  setLeagueFromImport(payload) {
-    const teams = (payload.teams || []).map((t) => ({
-      ...t,
-      finalized: !!t.finalized,
-    }));
-    set({
-      leagueId: payload.leagueId,
-      leagueName: payload.leagueName,
-      teams,
-      finalizedCount: teams.filter((t) => t.finalized).length,
-    });
-  },
+      finalizeTeam: (id) => {
+        const teams = get().teams.map((t) => (t.id === id ? { ...t, finalized: true } : t));
+        set({ teams, finalizedCount: computeFinalizedCount(teams) });
+      },
 
-  updateTeam(id, patch) {
-    const teams = get().teams.map((t) => (t.id === id ? { ...t, ...patch } : t));
-    set({ teams });
-  },
+      regenerateTeam: async (id) => {
+        const team = get().teams.find((t) => t.id === id);
+        if (!team) return;
 
-  generateTeam(id) {
-    const state = get();
-    const teams = state.teams.map((t) => {
-      if (t.id !== id) return t;
-      const mascot = (t.mascot ?? t.name).trim();
-      const style: StyleKey = t.stylePack ?? "modern";
-      const primary = t.primary ?? "#00E0FF";
-      const secondary = t.secondary ?? "#181818";
-      const logo = pollinationsLogoUrl({ mascot, primary, secondary, style });
-      return { ...t, logo };
-    });
-    set({ teams });
-  },
+        const style = team.stylePack ?? "modern";
+        const seed = team.seed ?? team.id; // stable but customizable
+        const url = buildPollinationsLogoUrl({
+          mascot: team.mascot || team.name,
+          primary: team.primary,
+          secondary: team.secondary,
+          style,
+          seed,
+        });
 
-  finalizeTeam(id) {
-    const teams = get().teams.map((t) => (t.id === id ? { ...t, finalized: true } : t));
-    set({ teams, finalizedCount: teams.filter((t) => t.finalized).length });
-  },
-}));
+        // optimistic update to show something immediately
+        set({
+          teams: get().teams.map((t) =>
+            t.id === id ? { ...t, logo: url } : t
+          ),
+        });
+
+        // Optional lightweight retry to dodge transient 404/429
+        try {
+          const res = await fetch(url, { method: "HEAD", cache: "no-store" });
+          if (!res.ok) {
+            const retryUrl = new URL(url);
+            retryUrl.searchParams.set("seed", `${seed}-${Date.now()}`);
+            set({
+              teams: get().teams.map((t) =>
+                t.id === id ? { ...t, logo: retryUrl.toString(), seed: retryUrl.searchParams.get("seed") || seed } : t
+              ),
+            });
+          }
+        } catch {
+          /* network hiccup: we keep optimistic URL; browser will retry when visible */
+        }
+      },
+    }),
+    {
+      name: "league-studio",
+      partialize: (s) => s,
+    }
+  )
+);
