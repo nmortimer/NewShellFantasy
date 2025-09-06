@@ -29,7 +29,6 @@ type State = {
   teams: Team[];
   finalizedCount: number;
 
-  /* mutations */
   setLeagueFromImport: (payload: ImportPayload) => void;
   loadMockLeague: () => Promise<void>;
   updateTeam: (id: string, patch: Partial<Team>) => void;
@@ -60,44 +59,50 @@ export const useLeagueStore = create<State>()(
         });
       },
 
-      /** Load the bundled mock league (12 teams). */
+      /** Load bundled mock league. Supports either:
+       *  - { leagueId, leagueName, teams: [...] }
+       *  - [ { id, name, manager, primary, secondary, stylePack? }, ... ]
+       */
       loadMockLeague: async () => {
-        // dynamic import keeps things simple even if resolveJsonModule isn't set
-        const mock = (await import("@/data/mockLeague.json")).default as Array<{
-          id: string;
-          name: string;
-          manager: string;
-          primary: string;
-          secondary: string;
-          stylePack?: LogoStyle;
-        }>;
+        const raw: any = (await import("@/data/mockLeague.json")).default;
 
-        const teams: Team[] = mock.map((m) => {
-          const style = (m.stylePack ?? "modern") as LogoStyle;
-          const mascot = m.name;
-          return {
-            id: m.id,
-            name: m.name,
-            manager: m.manager,
-            mascot,
-            primary: m.primary,
-            secondary: m.secondary,
-            stylePack: style,
-            finalized: false,
-            seed: m.id,
-            logo: buildPollinationsLogoUrl({
+        const leagueId: string = raw?.leagueId ?? "MOCK";
+        const leagueName: string = raw?.leagueName ?? "FTFL Premium Mock";
+        const list: any[] = Array.isArray(raw) ? raw : Array.isArray(raw?.teams) ? raw.teams : [];
+
+        const teams: Team[] = list.map((m) => {
+          const style: LogoStyle = (m.stylePack ?? "modern") as LogoStyle;
+          const mascot: string = m.mascot ?? m.name;
+          const seed: string = m.seed ?? m.id;
+
+          const logo: string =
+            m.logo ??
+            buildPollinationsLogoUrl({
               mascot,
               primary: m.primary,
               secondary: m.secondary,
               style,
-              seed: m.id,
-            }),
+              seed,
+            });
+
+          return {
+            id: String(m.id),
+            name: String(m.name),
+            manager: String(m.manager ?? "Manager"),
+            mascot,
+            primary: String(m.primary),
+            secondary: String(m.secondary),
+            stylePack: style,
+            finalized: Boolean(m.finalized) || false,
+            seed,
+            logo,
+            avatar: m.avatar,
           };
         });
 
         set({
-          leagueId: "MOCK",
-          leagueName: "FTFL Premium Mock",
+          leagueId,
+          leagueName,
           teams,
           finalizedCount: computeFinalizedCount(teams),
         });
@@ -142,19 +147,23 @@ export const useLeagueStore = create<State>()(
             set({
               teams: get().teams.map((t) =>
                 t.id === id
-                  ? { ...t, logo: retry.toString(), seed: retry.searchParams.get("seed") || seed }
+                  ? {
+                      ...t,
+                      logo: retry.toString(),
+                      seed: retry.searchParams.get("seed") || seed,
+                    }
                   : t
               ),
             });
           }
         } catch {
-          /* ignore network errors – browser will retry when visible */
+          // ignore transient network issues; browser will retry on view
         }
       },
     }),
     {
       name: "league-studio",
-      partialize: (s) => s, // persist everything; you can narrow later
+      partialize: (s) => s,
     }
   )
 );
