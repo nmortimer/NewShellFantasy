@@ -1,165 +1,111 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { Plus } from "lucide-react";
 
-type StyleKey = "modern" | "retro" | "futuristic" | "simple";
-const OPTIONS: StyleKey[] = ["modern", "retro", "futuristic", "simple"];
-const LABELS: Record<StyleKey, string> = {
-  modern: "Modern",
-  retro: "Retro",
-  futuristic: "Futuristic",
-  simple: "Simple"
+type Props = {
+  value: number; // 0..N-1
+  onChange: (index: number) => void;
+  /** Optional labels to render around the dial at equal angles */
+  labels?: string[];
 };
 
-// Geometry
-const WRAP = 180;          // room for labels
-const KNOB = 124;          // knob diameter
-const RING_INSET = 10;
-const SNAP_DEGS = [0, 90, 180, 270];
-
-export default function RotaryKnob({
-  value,
-  onChange
-}: {
-  value: number; // 0..3
-  onChange: (index: number) => void;
-}) {
-  const [angle, setAngle] = useState(indexToAngle(value));
+/**
+ * Rotary knob with discrete snap positions.
+ * - Click anywhere on the ring to jump
+ * - Drag to rotate
+ * - Optional labels rendered at the snap angles
+ */
+export default function RotaryKnob({ value, onChange, labels }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const idx = clamp(value, 0, 3);
-  const current = useMemo(() => OPTIONS[idx], [idx]);
+  const [dragging, setDragging] = useState(false);
 
-  useEffect(() => setAngle(indexToAngle(value)), [value]);
+  const count = useMemo(
+    () => (labels && labels.length > 1 ? labels.length : 4),
+    [labels]
+  );
 
-  const setFromPointer = (clientX: number, clientY: number) => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
+  const anglePer = 360 / count;
+  const clampIndex = (i: number) => ((i % count) + count) % count;
+
+  const handleFromPoint = (clientX: number, clientY: number) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
     const dx = clientX - cx;
     const dy = clientY - cy;
-    const deg = ((Math.atan2(dy, dx) * 180) / Math.PI + 90 + 360) % 360;
-    const snap = nearestSnap(deg);
-    setAngle(snap);
-    onChange(SNAP_DEGS.indexOf(snap));
+    const theta = Math.atan2(dy, dx); // -PI..PI
+    let deg = (theta * 180) / Math.PI + 90; // 0 at top
+    if (deg < 0) deg += 360;
+    const idx = clampIndex(Math.round(deg / anglePer) % count);
+    onChange(idx);
   };
 
-  const onPointerDown = (e: React.PointerEvent) => {
-    (e.target as Element).setPointerCapture(e.pointerId);
-    setFromPointer(e.clientX, e.clientY);
-    const move = (ev: PointerEvent) => setFromPointer(ev.clientX, ev.clientY);
-    const up = () => {
-      (e.target as Element).releasePointerCapture(e.pointerId);
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-    };
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
+  const onMouseDown = (e: React.MouseEvent) => {
+    setDragging(true);
+    handleFromPoint(e.clientX, e.clientY);
   };
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!dragging) return;
+    handleFromPoint(e.clientX, e.clientY);
+  };
+  const onMouseUp = () => setDragging(false);
+  const onMouseLeave = () => setDragging(false);
 
-  const center = WRAP / 2;
-  const knobR = KNOB / 2;
-  const ringR = knobR - RING_INSET;
-  const labelR = knobR + 20;
+  const needleRotation = value * anglePer;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="relative">
       <div
         ref={ref}
-        onPointerDown={onPointerDown}
-        className="relative select-none cursor-grab active:cursor-grabbing mx-auto"
-        style={{ width: WRAP, height: WRAP }}
-        aria-label="Style dial"
+        className="relative w-40 h-40 rounded-full bg-black/40 border border-white/10 shadow-inner select-none"
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseLeave}
+        role="slider"
+        aria-valuemin={0}
+        aria-valuemax={count - 1}
+        aria-valuenow={value}
       >
-        {/* knob */}
+        {/* ring */}
+        <div className="absolute inset-2 rounded-full border border-white/10" />
+        {/* needle */}
         <div
-          className="absolute rounded-full bg-base-800 border border-white/10 shadow-[0_0_30px_rgba(0,224,255,0.12)]"
+          className="absolute left-1/2 top-1/2 h-14 w-[2px] bg-white/80 origin-bottom"
           style={{
-            left: center - knobR,
-            top: center - knobR,
-            width: KNOB,
-            height: KNOB
+            transform: `translate(-50%, -100%) rotate(${needleRotation}deg)`,
           }}
-        >
-          {/* inner ring */}
-          <div
-            className="absolute rounded-full border border-white/10"
-            style={{
-              left: RING_INSET,
-              top: RING_INSET,
-              width: KNOB - RING_INSET * 2,
-              height: KNOB - RING_INSET * 2
-            }}
-          />
-
-          {/* ticks */}
-          {SNAP_DEGS.map((d) => (
-            <span
-              key={d}
-              className="absolute left-1/2 top-1/2 bg-white/50 origin-bottom"
-              style={{
-                width: 2,
-                height: 10,
-                transform: `translate(-50%,-${ringR - 2}px) rotate(${d}deg)`
-              }}
-            />
-          ))}
-
-          {/* needle */}
-          <div
-            className="absolute left-1/2 top-1/2 bg-foil-cyan origin-bottom rounded-sm transition-transform"
-            style={{
-              width: 3,
-              height: ringR - 6,
-              transform: `translate(-50%,-100%) rotate(${angle}deg)`
-            }}
-          />
-
-          {/* cap */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-base-900 border border-white/10 shadow-inner grid place-items-center text-[11px] text-white/70">
-            {LABELS[current]}
-          </div>
+        />
+        {/* center cap */}
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/50 border border-white/15 grid place-items-center">
+          <Plus className="w-4 h-4 text-white/60" />
         </div>
 
-        {/* labels */}
-        {OPTIONS.map((opt, i) => {
-          const deg = SNAP_DEGS[i];
-          const rad = (deg - 90) * (Math.PI / 180);
-          const x = center + Math.cos(rad) * labelR;
-          const y = center + Math.sin(rad) * labelR;
-          const active = current === opt;
+        {/* labels (optional) */}
+        {labels?.map((lab, i) => {
+          const a = (i * anglePer - 90) * (Math.PI / 180); // convert to rad, start at top
+          const r = 38; // radius for labels
+          const x = 80 + r * Math.cos(a);
+          const y = 80 + r * Math.sin(a);
+          const active = i === value;
           return (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => { setAngle(SNAP_DEGS[i]); onChange(i); }}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 text-[11px] px-1.5 py-0.5 rounded border ${
-                active ? "bg-foil-cyan/20 border-foil-cyan/50" : "bg-white/5 border-white/10 hover:bg-white/10"
+            <div
+              key={i}
+              className={`absolute text-[11px] px-1.5 py-0.5 rounded border ${
+                active
+                  ? "bg-foil-cyan/20 border-foil-cyan/40"
+                  : "bg-white/5 border-white/10 text-white/70"
               }`}
-              style={{ left: x, top: y }}
+              style={{ left: x, top: y, transform: "translate(-50%, -50%)" }}
             >
-              {LABELS[opt]}
-            </button>
+              {lab}
+            </div>
           );
         })}
-      </div>
-
-      {/* Selected chip (single) */}
-      <div className="text-sm mx-auto">
-        <span className="px-2 py-1 rounded bg-white/5 border border-white/10">{LABELS[current]}</span>
       </div>
     </div>
   );
 }
-
-/* helpers */
-function indexToAngle(i: number) { return SNAP_DEGS[Math.max(0, Math.min(3, i))]; }
-function nearestSnap(deg: number) {
-  let best = SNAP_DEGS[0], min = 1e9;
-  for (const d of SNAP_DEGS) {
-    const delta = Math.min(Math.abs(d - deg), 360 - Math.abs(d - deg));
-    if (delta < min) { min = delta; best = d; }
-  }
-  return best;
-}
-function clamp(n: number, a: number, b: number) { return Math.max(a, Math.min(b, n)); }
