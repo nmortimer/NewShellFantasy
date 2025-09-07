@@ -1,17 +1,21 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useLeagueStore } from "@/lib/store";
 import RotaryKnob from "@/components/RotaryKnob";
+import { suggestMascots } from "@/lib/mascot";
+import { LearningRepo } from "@/lib/learning";
 
 export default function TeamEditorPage() {
   const router = useRouter();
   const params = useParams();
   const id = Array.isArray(params?.id) ? params.id[0] : (params?.id as string);
 
-  const { teams, updateTeam, finalizeTeam, regenerateTeam } = useLeagueStore();
-  const team = useMemo(() => teams.find((t) => t.id === id), [teams, id]);
+  const store = useLeagueStore();
+  const team = useMemo(() => store.teams.find((t) => t.id === id), [store.teams, id]);
+
+  const [localMascot, setLocalMascot] = useState(team?.mascot || "");
 
   if (!team) {
     return (
@@ -21,6 +25,10 @@ export default function TeamEditorPage() {
     );
   }
 
+  // learned suggestions + rule suggestion merged, ranked
+  const learned = LearningRepo.toSuggestions(team.name);
+  const suggestions = suggestMascots(team.name, learned, 3);
+
   const styleOptions: Array<"modern" | "retro" | "futuristic" | "simple"> = [
     "modern",
     "retro",
@@ -28,17 +36,23 @@ export default function TeamEditorPage() {
     "simple",
   ];
 
+  const applyMascot = (m: string) => {
+    setLocalMascot(m);
+    store.updateTeam(team.id, { mascot: m });
+    // learn immediately (cheap, local)
+    LearningRepo.upsert(team.name, m);
+  };
+
   return (
     <main className="px-6 py-8">
       <h1 className="font-poster text-3xl mb-5">{team.name} Editor</h1>
 
-      {/* 2-column editor: left = big team card; right = controls */}
       <div className="grid grid-cols-1 xl:grid-cols-[1.25fr,0.75fr] gap-6">
-        {/* LEFT: Team info / big logo */}
+        {/* LEFT: big preview + info */}
         <section className="card-foil">
           <div className="card-foil-inner p-6">
             <div className="grid grid-cols-[minmax(260px,360px),1fr] gap-8 items-start">
-              {/* Logo preview box */}
+              {/* Logo */}
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4 w-full aspect-square grid place-items-center overflow-hidden">
                 {team.logo ? (
                   <img
@@ -47,17 +61,14 @@ export default function TeamEditorPage() {
                     className="object-contain w-[92%] h-[92%]"
                     referrerPolicy="no-referrer"
                     crossOrigin="anonymous"
-                    onError={(e) => {
-                      (e.currentTarget as HTMLImageElement).src =
-                        "/placeholders/logo-fallback.svg";
-                    }}
+                    onError={(e) => ((e.currentTarget as HTMLImageElement).src = "/placeholders/logo-fallback.svg")}
                   />
                 ) : (
                   <div className="text-white/50">No logo yet</div>
                 )}
               </div>
 
-              {/* Textual info */}
+              {/* Info */}
               <div className="space-y-4">
                 <div>
                   <div className="text-white/70 text-sm">Manager</div>
@@ -65,15 +76,30 @@ export default function TeamEditorPage() {
                 </div>
 
                 <div>
-                  <div className="text-white/70 text-sm">Mascot</div>
+                  <div className="text-white/70 text-sm mb-1">Mascot</div>
                   <input
-                    value={team.mascot}
-                    onChange={(e) => updateTeam(team.id, { mascot: e.target.value })}
+                    value={localMascot}
+                    onChange={(e) => setLocalMascot(e.target.value)}
+                    onBlur={() => applyMascot(localMascot)}
                     className="w-full px-3 py-2 rounded bg-base-700 border border-white/10"
-                    placeholder="e.g., Silverhawks"
+                    placeholder="e.g., fox head"
                   />
+                  {suggestions.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {suggestions.map((s) => (
+                        <button
+                          key={`${s.source}-${s.mascot}`}
+                          onClick={() => applyMascot(s.mascot)}
+                          className="px-2 py-1 rounded-lg border border-white/12 bg-white/5 hover:bg-white/10 text-sm"
+                          title={`${s.source} • ${s.confidence}`}
+                        >
+                          {s.mascot}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <p className="text-xs text-white/50 mt-1">
-                    Used by AI when generating logos & styles.
+                    Used by AI when generating logos & styles. Choosing a chip teaches the system.
                   </p>
                 </div>
 
@@ -93,25 +119,9 @@ export default function TeamEditorPage() {
           </div>
         </section>
 
-        {/* RIGHT: Controls */}
+        {/* RIGHT: controls */}
         <section className="space-y-6">
-          {/* Mascot */}
-          <div className="card-foil">
-            <div className="card-foil-inner p-5">
-              <div className="text-white/80 mb-3">Mascot</div>
-              <input
-                value={team.mascot}
-                onChange={(e) => updateTeam(team.id, { mascot: e.target.value })}
-                className="w-full px-3 py-2 rounded bg-base-700 border border-white/10"
-                placeholder="e.g., Belgian Waffles"
-              />
-              <p className="text-xs text-white/50 mt-1">
-                This is the phrase AI will key on (you can edit any time).
-              </p>
-            </div>
-          </div>
-
-          {/* Style (rotary dial with labels) */}
+          {/* Style dial */}
           <div className="card-foil">
             <div className="card-foil-inner p-5">
               <div className="text-white/80 mb-3">Style</div>
@@ -119,7 +129,7 @@ export default function TeamEditorPage() {
                 value={styleOptions.indexOf(team.stylePack ?? "modern")}
                 onChange={(idx) => {
                   const next = styleOptions[idx] ?? "modern";
-                  updateTeam(team.id, { stylePack: next });
+                  store.updateTeam(team.id, { stylePack: next });
                 }}
                 labels={["Modern", "Retro", "Futuristic", "Simple"]}
               />
@@ -137,12 +147,12 @@ export default function TeamEditorPage() {
                 <ColorInput
                   label="Primary"
                   value={team.primary}
-                  onChange={(v) => updateTeam(team.id, { primary: v })}
+                  onChange={(v) => store.updateTeam(team.id, { primary: v })}
                 />
                 <ColorInput
                   label="Secondary"
                   value={team.secondary}
-                  onChange={(v) => updateTeam(team.id, { secondary: v })}
+                  onChange={(v) => store.updateTeam(team.id, { secondary: v })}
                 />
               </div>
             </div>
@@ -157,14 +167,16 @@ export default function TeamEditorPage() {
               Back
             </button>
             <button
-              onClick={() => regenerateTeam(team.id)}
+              onClick={() => store.regenerateTeam(team.id)}
               className="px-4 py-2 rounded-lg border border-foil-cyan/40 bg-foil-cyan/15 hover:shadow-neon-cyan transition"
             >
               Generate
             </button>
             <button
               onClick={() => {
-                finalizeTeam(team.id);
+                // learn on finalize too (if user typed something custom)
+                LearningRepo.upsert(team.name, team.mascot);
+                store.finalizeTeam(team.id);
                 router.push("/creation");
               }}
               className="px-4 py-2 rounded-lg border border-foil-gold/40 bg-foil-gold/20 hover:shadow-neon-gold transition"
@@ -183,10 +195,7 @@ export default function TeamEditorPage() {
 function ColorChip({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span
-        className="inline-block w-4 h-4 rounded border border-white/20"
-        style={{ background: value }}
-      />
+      <span className="inline-block w-4 h-4 rounded border border-white/20" style={{ background: value }} />
       <span className="text-white/70 text-sm">{label}</span>
       <span className="text-white/90 text-sm font-mono">{value}</span>
     </div>
