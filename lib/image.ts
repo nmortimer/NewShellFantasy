@@ -1,46 +1,86 @@
-// lib/image.ts
+/**
+ * Pollinations image helper for team logo generation.
+ * Builds a strict, sports-branding prompt with color + style control.
+ */
+
 export type LogoStyle = "modern" | "retro" | "futuristic" | "simple";
 
-export function buildPollinationsLogoUrl(opts: {
-  mascot: string;
-  primary: string;
-  secondary: string;
-  style: LogoStyle;
-  seed?: string; // stable seed = stable + cached renders
-}) {
-  const { mascot, primary, secondary, style, seed } = opts;
+type BuildArgs = {
+  mascot: string;        // e.g., "Silverhawks" or "wolf"
+  primary: string;       // hex (#RRGGBB)
+  secondary: string;     // hex (#RRGGBB)
+  style: LogoStyle;      // one of: modern | retro | futuristic | simple
+  seed?: string;         // stable seed per team
+  size?: number;         // output size (pollinations supports 1024 well)
+};
 
-  const stylePhrase =
-    style === "modern"
-      ? "modern professional sports logo, sleek bold lines, neon edge"
-      : style === "retro"
-      ? "retro vintage sports logo, flat emblem 80s style"
-      : style === "futuristic"
-      ? "futuristic sci-fi sports logo, cyberpunk glow"
-      : "minimal flat icon sports logo, bold silhouette";
+/** Style-specific descriptors we merge into the core prompt. */
+function styleDescriptor(style: LogoStyle): string {
+  switch (style) {
+    case "modern":
+      return "sleek minimal vector, flat colors, contemporary sports branding";
+    case "retro":
+      return "retro sports logo style, vintage print look, bold flat lines";
+    case "futuristic":
+      return "futuristic minimal design, neon-inspired, sharp geometric edges";
+    case "simple":
+      return "extremely minimal flat icon, abstract but recognizable mascot mark";
+    default:
+      return "sleek minimal vector, flat colors, contemporary sports branding";
+  }
+}
 
-  const prompt = [
-    "Premium sports team logo, centered emblem",
-    `mascot: ${mascot}`,
-    stylePhrase,
-    "esports / NBA alternate logo aesthetic",
-    "no text, transparent or flat background",
-    `primary color ${primary}, secondary color ${secondary}`,
-    "holographic trading card vibe, subtle neon glow",
-  ]
-    .join(", ")
-    .replace(/\s+/g, " ");
+/**
+ * Core prompt template:
+ * - Professional sports branding
+ * - Flat scalable vector look
+ * - Hard constraints: no text, no gradients, no shield/background
+ * - Locked palette to primary + secondary
+ */
+export function buildPrompt({
+  mascot,
+  primary,
+  secondary,
+  style,
+}: Pick<BuildArgs, "mascot" | "primary" | "secondary" | "style">): string {
+  const styleLine = styleDescriptor(style);
+  return [
+    `Professional sports team logo of ${mascot}, in a bold ${style} vector style.`,
+    styleLine + ".",
+    "Clean flat design, sharp lines, symmetrical composition.",
+    `Use only the team’s colors: ${primary} and ${secondary}.`,
+    "No text, no words, no gradients, no shield, no background.",
+    "Centered mascot mark, polished and scalable as a logo.",
+  ].join(" ");
+}
 
-  // Stable, fast renders with consistent sizing and no-text bias
-  const params = new URLSearchParams({
-    seed: seed || mascot,
-    width: "768",
-    height: "768",
-    nologo: "true",
-    enhance: "true",
-  });
+/**
+ * Build a Pollinations image URL.
+ * We keep the same endpoint pattern your app already uses:
+ *   https://image.pollinations.ai/prompt/{encodedPrompt}?seed=...&width=...&height=...
+ *
+ * Notes:
+ * - seed is important for stable per-team results
+ * - width/height are square for logos
+ */
+export function buildPollinationsLogoUrl({
+  mascot,
+  primary,
+  secondary,
+  style,
+  seed,
+  size = 1024,
+}: BuildArgs): string {
+  const prompt = buildPrompt({ mascot, primary, secondary, style });
+  const base = "https://image.pollinations.ai/prompt/";
+  const qs = new URLSearchParams();
 
-  return `https://image.pollinations.ai/prompt/${encodeURIComponent(
-    prompt
-  )}?${params.toString()}`;
+  if (seed) qs.set("seed", String(seed));
+  qs.set("width", String(size));
+  qs.set("height", String(size));
+
+  // If you decide to pin a model later, you can add it here:
+  // qs.set("model", "flux");
+
+  return `${base}${encodeURIComponent(prompt)}?${qs.toString()}`;
 }
