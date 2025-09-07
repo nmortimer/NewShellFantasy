@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { buildPollinationsLogoUrl, type LogoStyle } from "@/lib/image";
+import { deriveMascot } from "@/lib/mascot";
 
-/** ---------- Types ---------- */
 export type Team = {
   id: string;
   name: string;
@@ -36,12 +36,43 @@ type State = {
   regenerateTeam: (id: string) => Promise<void>;
 };
 
-/** ---------- Helpers ---------- */
 function computeFinalizedCount(teams: Team[]) {
   return teams.filter((t) => t.finalized).length;
 }
 
-/** ---------- Store ---------- */
+function buildTeamFromRaw(m: any): Team {
+  const style: LogoStyle = (m.stylePack ?? "modern") as LogoStyle;
+  const name: string = String(m.name);
+  const mascot = String(m.mascot ?? deriveMascot(name).mascot);
+  const primary = String(m.primary);
+  const secondary = String(m.secondary);
+  const seed = String(m.seed ?? m.id);
+
+  const logo =
+    m.logo ??
+    buildPollinationsLogoUrl({
+      mascot,
+      primary,
+      secondary,
+      style,
+      seed,
+    });
+
+  return {
+    id: String(m.id),
+    name,
+    manager: String(m.manager ?? "Manager"),
+    mascot,
+    primary,
+    secondary,
+    stylePack: style,
+    finalized: Boolean(m.finalized) || false,
+    seed,
+    logo,
+    avatar: m.avatar,
+  };
+}
+
 export const useLeagueStore = create<State>()(
   persist(
     (set, get) => ({
@@ -51,61 +82,22 @@ export const useLeagueStore = create<State>()(
       finalizedCount: 0,
 
       setLeagueFromImport: ({ leagueId, leagueName, teams }) => {
+        const normalized = teams.map(buildTeamFromRaw);
         set({
           leagueId,
           leagueName,
-          teams,
-          finalizedCount: computeFinalizedCount(teams),
+          teams: normalized,
+          finalizedCount: computeFinalizedCount(normalized),
         });
       },
 
-      /** Load bundled mock league. Supports either:
-       *  - { leagueId, leagueName, teams: [...] }
-       *  - [ { id, name, manager, primary, secondary, stylePack? }, ... ]
-       */
       loadMockLeague: async () => {
         const raw: any = (await import("@/data/mockLeague.json")).default;
-
         const leagueId: string = raw?.leagueId ?? "MOCK";
         const leagueName: string = raw?.leagueName ?? "FTFL Premium Mock";
         const list: any[] = Array.isArray(raw) ? raw : Array.isArray(raw?.teams) ? raw.teams : [];
-
-        const teams: Team[] = list.map((m) => {
-          const style: LogoStyle = (m.stylePack ?? "modern") as LogoStyle;
-          const mascot: string = m.mascot ?? m.name;
-          const seed: string = m.seed ?? m.id;
-
-          const logo: string =
-            m.logo ??
-            buildPollinationsLogoUrl({
-              mascot,
-              primary: m.primary,
-              secondary: m.secondary,
-              style,
-              seed,
-            });
-
-          return {
-            id: String(m.id),
-            name: String(m.name),
-            manager: String(m.manager ?? "Manager"),
-            mascot,
-            primary: String(m.primary),
-            secondary: String(m.secondary),
-            stylePack: style,
-            finalized: Boolean(m.finalized) || false,
-            seed,
-            logo,
-            avatar: m.avatar,
-          };
-        });
-
-        set({
-          leagueId,
-          leagueName,
-          teams,
-          finalizedCount: computeFinalizedCount(teams),
-        });
+        const teams: Team[] = list.map(buildTeamFromRaw);
+        set({ leagueId, leagueName, teams, finalizedCount: computeFinalizedCount(teams) });
       },
 
       updateTeam: (id, patch) => {
@@ -118,7 +110,6 @@ export const useLeagueStore = create<State>()(
         set({ teams, finalizedCount: computeFinalizedCount(teams) });
       },
 
-      /** Regenerate the logo via Pollinations (stable seed, retry-friendly). */
       regenerateTeam: async (id) => {
         const team = get().teams.find((t) => t.id === id);
         if (!team) return;
@@ -126,19 +117,15 @@ export const useLeagueStore = create<State>()(
         const style = team.stylePack ?? "modern";
         const seed = team.seed ?? team.id;
         const url = buildPollinationsLogoUrl({
-          mascot: team.mascot || team.name,
+          mascot: team.mascot,
           primary: team.primary,
           secondary: team.secondary,
           style,
           seed,
         });
 
-        // optimistic update
-        set({
-          teams: get().teams.map((t) => (t.id === id ? { ...t, logo: url } : t)),
-        });
+        set({ teams: get().teams.map((t) => (t.id === id ? { ...t, logo: url } : t)) });
 
-        // lightweight HEAD probe; if fails, tweak seed once
         try {
           const res = await fetch(url, { method: "HEAD", cache: "no-store" });
           if (!res.ok) {
@@ -147,23 +134,16 @@ export const useLeagueStore = create<State>()(
             set({
               teams: get().teams.map((t) =>
                 t.id === id
-                  ? {
-                      ...t,
-                      logo: retry.toString(),
-                      seed: retry.searchParams.get("seed") || seed,
-                    }
+                  ? { ...t, logo: retry.toString(), seed: retry.searchParams.get("seed") || seed }
                   : t
               ),
             });
           }
         } catch {
-          // ignore transient network issues; browser will retry on view
+          /* ignore transient */
         }
       },
     }),
-    {
-      name: "league-studio",
-      partialize: (s) => s,
-    }
+    { name: "league-studio" }
   )
 );
