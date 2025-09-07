@@ -3,6 +3,8 @@
  * Tiny client-side learning repo. Replace with Vercel KV later if desired.
  */
 
+import type { MascotSuggestion } from "@/lib/mascot";
+
 export type LearnedMap = Record<string, string>; // key: normalized team name -> mascot
 
 const STORAGE_KEY = "league-studio-learned-mascots:v1";
@@ -38,8 +40,18 @@ export const LearningRepo = {
     return map[normalizeName(teamName)];
   },
 
-  toSuggestions(teamName: string) {
+  /** Return learned suggestions in the correct MascotSuggestion[] type */
+  toSuggestions(teamName: string): MascotSuggestion[] {
     const m = this.get(teamName);
-    return m ? [{ mascot: m, confidence: "high", source: "learned" as const }] : [];
+    return m
+      ? [
+          {
+            mascot: m,
+            confidence: "high" as const,
+            source: "learned" as const,
+            reason: "user-override",
+          },
+        ]
+      : [];
   },
 };
