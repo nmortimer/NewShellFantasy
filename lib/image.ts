@@ -1,41 +1,40 @@
 /**
  * Pollinations image helper for team logo generation.
- * Builds a strict, sports-branding prompt with color + style control.
+ * Stricter prompt: head-only mascot, 2-color palette, no text/badges/gradients.
  */
 
 export type LogoStyle = "modern" | "retro" | "futuristic" | "simple";
 
 type BuildArgs = {
-  mascot: string;        // e.g., "Silverhawks" or "wolf"
+  mascot: string;        // concise subject, e.g. "fox", "eagle", "unicorn"
   primary: string;       // hex (#RRGGBB)
   secondary: string;     // hex (#RRGGBB)
   style: LogoStyle;      // one of: modern | retro | futuristic | simple
   seed?: string;         // stable seed per team
-  size?: number;         // output size (pollinations supports 1024 well)
+  size?: number;         // output size
 };
 
-/** Style-specific descriptors we merge into the core prompt. */
+/** Style-specific descriptors to nudge shape language without adding noise */
 function styleDescriptor(style: LogoStyle): string {
   switch (style) {
     case "modern":
-      return "sleek minimal vector, flat colors, contemporary sports branding";
+      return "sleek minimal vector, bold flat shapes, contemporary sports branding";
     case "retro":
-      return "retro sports logo style, vintage print look, bold flat lines";
+      return "vintage sports logo feel, bold flat lines, limited inks";
     case "futuristic":
-      return "futuristic minimal design, neon-inspired, sharp geometric edges";
+      return "sharp geometric edges, sci-fi minimal vector, neon-inspired but flat";
     case "simple":
-      return "extremely minimal flat icon, abstract but recognizable mascot mark";
+      return "ultra-minimal flat icon, reductive and abstract yet recognizable";
     default:
-      return "sleek minimal vector, flat colors, contemporary sports branding";
+      return "sleek minimal vector, bold flat shapes, contemporary sports branding";
   }
 }
 
 /**
- * Core prompt template:
- * - Professional sports branding
- * - Flat scalable vector look
- * - Hard constraints: no text, no gradients, no shield/background
- * - Locked palette to primary + secondary
+ * Core prompt:
+ * - head-only mark avoids full-body mascots and wordmarks
+ * - flat 2-color palette locked to primary + secondary (white allowed as background/negative space)
+ * - explicitly bans text, letters, numbers, badges, shields, banners, gradients, shadows, glow
  */
 export function buildPrompt({
   mascot,
@@ -44,24 +43,28 @@ export function buildPrompt({
   style,
 }: Pick<BuildArgs, "mascot" | "primary" | "secondary" | "style">): string {
   const styleLine = styleDescriptor(style);
+
+  // Important: repeat constraints in different phrasings to reduce drift.
   return [
-    `Professional sports team logo of ${mascot}, in a bold ${style} vector style.`,
-    styleLine + ".",
-    "Clean flat design, sharp lines, symmetrical composition.",
-    `Use only the team’s colors: ${primary} and ${secondary}.`,
-    "No text, no words, no gradients, no shield, no background.",
-    "Centered mascot mark, polished and scalable as a logo.",
+    // Subject & framing
+    `Professional sports team logo: head-only ${mascot}.`,
+    // Visual language
+    `${styleLine}. Clean flat vector design, sharp lines, symmetrical, centered composition.`,
+    // Palette lock
+    `Two-color palette ONLY: ${primary} and ${secondary}. Use white ONLY as background/negative space.`,
+    // Hard bans (multiple phrasings help)
+    "No text, no words, no letters, no typography, no numbers.",
+    "No badge, no shield, no crest, no emblem, no banner, no ribbon, no circle backdrop.",
+    "No gradients, no shadows, no glow, no 3D, no textures.",
+    // Output intent
+    "Polished, scalable mark suitable for jerseys and app icons."
   ].join(" ");
 }
 
 /**
- * Build a Pollinations image URL.
- * We keep the same endpoint pattern your app already uses:
- *   https://image.pollinations.ai/prompt/{encodedPrompt}?seed=...&width=...&height=...
- *
- * Notes:
- * - seed is important for stable per-team results
- * - width/height are square for logos
+ * Build Pollinations URL with our prompt.
+ * If you want to pin a model, uncomment qs.set('model', 'flux') which often
+ * behaves more predictably for flat logos.
  */
 export function buildPollinationsLogoUrl({
   mascot,
@@ -79,7 +82,7 @@ export function buildPollinationsLogoUrl({
   qs.set("width", String(size));
   qs.set("height", String(size));
 
-  // If you decide to pin a model later, you can add it here:
+  // Optional: pin a model that tends to obey flat-vector prompts
   // qs.set("model", "flux");
 
   return `${base}${encodeURIComponent(prompt)}?${qs.toString()}`;
